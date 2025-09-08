@@ -1,0 +1,91 @@
+[
+  {
+    "id": "central",
+    "description": "A vast, cold chamber where shadows cling to the stone walls. Faint whispers echo from every direction, though no source can be seen.",
+    "exits": {
+      "north": "north",
+      "east": "east",
+      "west": "west",
+      "south": "south"
+    }
+  },
+  {
+    "id": "north",
+    "description": "A corridor of cracked stone that smells of damp rot. The air feels heavy, as though watching you.",
+    "exits": {
+      "south": "central"
+    },
+    "items": [
+      {
+        "type": "item",
+        "id": "dripping_water",
+        "aliases": ["water", "drip", "dripping water"],
+        "description": "Foul-smelling water drips steadily from the cracked ceiling."
+      },
+      {
+        "type": "item",
+        "id": "claw_marks",
+        "aliases": ["marks", "scratches", "claw marks"],
+        "description": "Jagged claw marks gouge the stone walls, deep and fresh as though recently made."
+      }
+    ]
+  },
+  {
+    "id": "east",
+    "description": "An iron-barred room reeking of rust and old blood. The silence here is suffocating.",
+    "exits": {
+      "west": "central"
+    },
+    "items": [
+      {
+        "type": "item",
+        "id": "chains",
+        "aliases": ["chain", "chains"],
+        "description": "Shattered chains lie scattered across the floor, their iron links twisted and broken."
+      },
+      {
+        "type": "item",
+        "id": "manacles",
+        "aliases": ["manacle", "manacles", "shackles"],
+        "description": "Broken manacles hang from the walls, their edges sharp with rust."
+      }
+    ]
+  },
+  {
+    "id": "south",
+    "description": "A damp crypt lined with crumbling alcoves. The ground trembles faintly with scratching noises below.",
+    "exits": {
+      "north": "central"
+    },
+    "items": [
+      {
+        "type": "item",
+        "id": "cobwebs",
+        "aliases": ["web", "webs", "cobweb", "cobwebs"],
+        "description": "Cobwebs hang thick as curtains."
+      },
+      {
+        "type": "food",
+        "id": "apple",
+        "aliases": ["apple"],
+        "description": "A bruised apple, its skin mottled and blackened as though rotting from within.",
+        "eatDescription": "The apple tastes bitter and foul. As you swallow, a shiver crawls down your spine."
+      }
+    ]
+  },
+  {
+    "id": "west",
+    "description": "A narrow hall where darkness twists with every flicker of light. The walls seem to shift with each passing shadow.",
+    "exits": {
+      "east": "central"
+    },
+    "items": [
+      {
+        "type": "item",
+        "id": "torches",
+        "aliases": ["torch", "torches"],
+        "description": "Flickering torches cling to the walls. The flames sputter and gasp as though choking for air."
+      }
+    ]
+  }
+]
