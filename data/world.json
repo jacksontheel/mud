@@ -28,10 +28,14 @@
             "type": "eventful",
             "rules": [
               {
-                "when": { "kind": "attack" }
+                "when": {
+                  "kind": "attack"
+                }
               },
               {
-                "when": { "kind": "kiss" }
+                "when": {
+                  "kind": "kiss"
+                }
               }
             ]
           }
