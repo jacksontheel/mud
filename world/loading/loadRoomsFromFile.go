@@ -8,13 +8,38 @@ import (
 	"example.com/mud/world/entities"
 )
 
-type entityFactory func() entities.Entity
+// --- raw structures for decoding JSON ---
 
-var entityRegistry = map[string]entityFactory{}
-
-func RegisterEntityType(typ string, ctor entityFactory) {
-	entityRegistry[typ] = ctor
+type rawRoom struct {
+	Id          string            `json:"id"`
+	Description string            `json:"description"`
+	Exits       map[string]string `json:"exits"`
+	RawItems    []rawItem         `json:"items"`
 }
+
+type rawItem struct {
+	Id         string            `json:"id"`
+	Components []json.RawMessage `json:"components"`
+}
+
+type rawComponent struct {
+	Type string `json:"type"`
+}
+
+// --- registry machinery ---
+
+// componentFactory creates a new empty component instance
+type componentFactory func() any
+
+var componentRegistry = map[string]componentFactory{}
+
+// RegisterComponentType lets you plug in your concrete component structs.
+// Example: RegisterComponentType("CAliases", func() any { return &entities.CAliases{} })
+func RegisterComponentType(typ string, ctor componentFactory) {
+	componentRegistry[typ] = ctor
+}
+
+// --- loading ---
 
 func LoadRoomsFromFile(filename string) (map[string]*entities.Room, error) {
 	data, err := os.ReadFile(filename)
@@ -29,7 +54,7 @@ func LoadRoomsFromFile(filename string) (map[string]*entities.Room, error) {
 
 	result := make(map[string]*entities.Room, len(rawRooms))
 	for _, rr := range rawRooms {
-		items, err := decodeEntities(rr.Entities)
+		items, err := decodeEntities(rr.RawItems)
 		if err != nil {
 			return nil, fmt.Errorf("room %q: %w", rr.Id, err)
 		}
@@ -45,31 +70,35 @@ func LoadRoomsFromFile(filename string) (map[string]*entities.Room, error) {
 	return result, nil
 }
 
-func decodeEntities(raws []json.RawMessage) ([]entities.Entity, error) {
-	entities := make([]entities.Entity, 0, len(raws))
+// decodeEntities turns raw JSON items into *entities.Entity
+func decodeEntities(raws []rawItem) ([]*entities.Entity, error) {
+	entitiesList := make([]*entities.Entity, 0, len(raws))
 	for _, raw := range raws {
-		// look at type
-		var env entityEnvelope
-		if err := json.Unmarshal(raw, &env); err != nil {
-			return nil, fmt.Errorf("item envelope: %w", err)
-		}
-		if env.Type == "" {
-			return nil, fmt.Errorf("item missing 'type' field")
+		e := entities.NewEntity()
+
+		for _, compRaw := range raw.Components {
+			var env rawComponent
+			if err := json.Unmarshal(compRaw, &env); err != nil {
+				return nil, fmt.Errorf("component envelope: %w", err)
+			}
+			if env.Type == "" {
+				return nil, fmt.Errorf("component missing 'type' field")
+			}
+
+			ctor, ok := componentRegistry[env.Type]
+			if !ok {
+				return nil, fmt.Errorf("unknown component type %q", env.Type)
+			}
+
+			comp := ctor()
+			if err := json.Unmarshal(compRaw, comp); err != nil {
+				return nil, fmt.Errorf("decode component %q: %w", env.Type, err)
+			}
+
+			e.Add(comp)
 		}
 
-		// find constructor
-		ctor, ok := entityRegistry[env.Type]
-		if !ok {
-			return nil, fmt.Errorf("unknown item type %q", env.Type)
-		}
-
-		// decode
-		inst := ctor()
-		if err := json.Unmarshal(raw, inst); err != nil {
-			return nil, fmt.Errorf("decode %q: %w", env.Type, err)
-		}
-
-		entities = append(entities, inst)
+		entitiesList = append(entitiesList, e)
 	}
-	return entities, nil
+	return entitiesList, nil
 }

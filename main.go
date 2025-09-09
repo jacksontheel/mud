@@ -12,8 +12,9 @@ import (
 )
 
 func main() {
-	loading.RegisterEntityType("food", func() entities.Entity { return &entities.Food{} })
-	loading.RegisterEntityType("item", func() entities.Entity { return &entities.Item{} })
+	loading.RegisterComponentType("aliased", func() any { return &entities.CAliased{} })
+	loading.RegisterComponentType("descriptioned", func() any { return &entities.CDescriptioned{} })
+	loading.RegisterComponentType("eventful", func() any { return &entities.CEventful{} })
 
 	rooms, err := loading.LoadRoomsFromFile("data/world.json")
 	if err != nil {

@@ -32,13 +32,50 @@ func (p *Player) Move(direction string) string {
 	return "You can't go there."
 }
 
-func (p *Player) Look(target string) string {
-	if target == "" {
+func (p *Player) Look(alias string) string {
+	if alias == "" {
 		return p.currentRoom.GetDescription()
 	}
-	if item, ok := p.currentRoom.EntitiesByAlias[target]; ok {
-		return item.GetDescription()
-	} else {
-		return "you must be going mad. That's not here."
+
+	if target, ok := p.currentRoom.EntitiesByAlias[alias]; ok {
+		if eventful, ok := entities.Find[entities.Descriptioned](target); ok {
+			return eventful.Description()
+		}
+		return fmt.Sprintf("The %s before you is undescribable.", alias)
 	}
+	return "you must be going mad. That's not here."
+
+}
+
+func (p *Player) Attack(alias string) string {
+	return p.actUpon(
+		"attack",
+		alias,
+		fmt.Sprintf("Now is not the time to attack %s.", alias),
+	)
+}
+
+func (p *Player) Kiss(alias string) string {
+	return p.actUpon(
+		"kiss",
+		alias,
+		fmt.Sprintf("You can be romantic with %s later.", alias),
+	)
+}
+
+func (p *Player) actUpon(action, alias, noMatchResponse string) string {
+	if target, ok := p.currentRoom.EntitiesByAlias[alias]; ok {
+		if eventful, ok := entities.Find[entities.Eventful](target); ok {
+			response, ok := eventful.OnEvent(&entities.Event{
+				Kind:   action,
+				Target: target,
+			})
+
+			if ok {
+				return response
+			}
+		}
+		return noMatchResponse
+	}
+	return "you must be going mad. That's not here."
 }

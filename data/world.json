@@ -7,7 +7,37 @@
       "east": "east",
       "west": "west",
       "south": "south"
-    }
+    },
+    "items": [
+      {
+        "id": "man",
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "man",
+              "person",
+              "guy"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "There is a cool guy here."
+          },
+          {
+            "type": "eventful",
+            "rules": [
+              {
+                "when": { "kind": "attack" }
+              },
+              {
+                "when": { "kind": "kiss" }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "north",
@@ -17,16 +47,38 @@
     },
     "items": [
       {
-        "type": "item",
         "id": "dripping_water",
-        "aliases": ["water", "drip", "dripping water"],
-        "description": "Foul-smelling water drips steadily from the cracked ceiling."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "water",
+              "drip",
+              "dripping water"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Foul-smelling water drips steadily from the cracked ceiling."
+          }
+        ]
       },
       {
-        "type": "item",
         "id": "claw_marks",
-        "aliases": ["marks", "scratches", "claw marks"],
-        "description": "Jagged claw marks gouge the stone walls, deep and fresh as though recently made."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "marks",
+              "scratches",
+              "claw marks"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Jagged claw marks gouge the stone walls, deep and fresh as though recently made."
+          }
+        ]
       }
     ]
   },
@@ -38,16 +90,37 @@
     },
     "items": [
       {
-        "type": "item",
         "id": "chains",
-        "aliases": ["chain", "chains"],
-        "description": "Shattered chains lie scattered across the floor, their iron links twisted and broken."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "chain",
+              "chains"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Shattered chains lie scattered across the floor, their iron links twisted and broken."
+          }
+        ]
       },
       {
-        "type": "item",
         "id": "manacles",
-        "aliases": ["manacle", "manacles", "shackles"],
-        "description": "Broken manacles hang from the walls, their edges sharp with rust."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "manacle",
+              "manacles",
+              "shackles"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Broken manacles hang from the walls, their edges sharp with rust."
+          }
+        ]
       }
     ]
   },
@@ -59,17 +132,37 @@
     },
     "items": [
       {
-        "type": "item",
         "id": "cobwebs",
-        "aliases": ["web", "webs", "cobweb", "cobwebs"],
-        "description": "Cobwebs hang thick as curtains."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "web",
+              "webs",
+              "cobweb",
+              "cobwebs"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Cobwebs hang thick as curtains."
+          }
+        ]
       },
       {
-        "type": "food",
         "id": "apple",
-        "aliases": ["apple"],
-        "description": "A bruised apple, its skin mottled and blackened as though rotting from within.",
-        "eatDescription": "The apple tastes bitter and foul. As you swallow, a shiver crawls down your spine."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "apple"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "A bruised apple, its skin mottled and blackened as though rotting from within."
+          }
+        ]
       }
     ]
   },
@@ -81,10 +174,20 @@
     },
     "items": [
       {
-        "type": "item",
         "id": "torches",
-        "aliases": ["torch", "torches"],
-        "description": "Flickering torches cling to the walls. The flames sputter and gasp as though choking for air."
+        "components": [
+          {
+            "type": "aliased",
+            "text": [
+              "torch",
+              "torches"
+            ]
+          },
+          {
+            "type": "descriptioned",
+            "text": "Flickering torches cling to the walls. The flames sputter and gasp as though choking for air."
+          }
+        ]
       }
     ]
   }

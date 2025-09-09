@@ -8,9 +8,11 @@ import (
 )
 
 const (
-	CommandMove = "move"
-	CommandTake = "take"
-	CommandLook = "look"
+	CommandMove   = "move"
+	CommandTake   = "take"
+	CommandLook   = "look"
+	CommandAttack = "attack"
+	CommandKiss   = "kiss"
 )
 
 type Command struct {
@@ -53,6 +55,12 @@ var verbAliases = map[string]string{
 	"examine": CommandLook,
 	"inspect": CommandLook,
 	"l":       CommandLook,
+
+	"attack": CommandAttack,
+	"kill":   CommandAttack,
+	"hit":    CommandAttack,
+
+	"kiss": CommandKiss,
 }
 
 var multiWordVerbMerges = [][]string{
@@ -100,6 +108,14 @@ var patterns = []Pattern{
 	}},
 	{kind: CommandLook, tokens: []patToken{
 		Lit(CommandLook),
+		SlotRest("object", "object"),
+	}},
+	{kind: CommandAttack, tokens: []patToken{
+		Lit(CommandAttack),
+		SlotRest("object", "object"),
+	}},
+	{kind: CommandKiss, tokens: []patToken{
+		Lit(CommandKiss),
 		SlotRest("object", "object"),
 	}},
 }
