@@ -20,7 +20,6 @@ func (e *Entity) Add(c any) *Entity {
 	return e
 }
 
-// First component that satisfies interface T (e.g., Edible, Throwable).
 func Find[T any](e *Entity) (T, bool) {
 	var zero T
 	e.mu.RLock()

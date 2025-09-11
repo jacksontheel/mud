@@ -29,13 +29,29 @@
             "rules": [
               {
                 "when": {
-                  "kind": "attack"
-                }
+                  "type": "attack"
+                },
+                "then": [
+                  {
+                    "type": "say",
+                    "text": "The cool guy dies instantly, then returns to life, good as new."
+                  },
+                  {
+                    "type": "say",
+                    "text": "He growls, \"Try that again, I freakin' dare you, dude.\""
+                  }
+                ]
               },
               {
                 "when": {
-                  "kind": "kiss"
-                }
+                  "type": "kiss"
+                },
+                "then": [
+                  {
+                    "type": "say",
+                    "text": "He says slyly, \"Buy a guy a drink, first!\""
+                  }
+                ]
               }
             ]
           }

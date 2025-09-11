@@ -67,7 +67,7 @@ func (p *Player) actUpon(action, alias, noMatchResponse string) string {
 	if target, ok := p.currentRoom.EntitiesByAlias[alias]; ok {
 		if eventful, ok := entities.Find[entities.Eventful](target); ok {
 			response, ok := eventful.OnEvent(&entities.Event{
-				Kind:   action,
+				Type:   action,
 				Target: target,
 			})
 
