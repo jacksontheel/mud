@@ -60,11 +60,14 @@ var verbAliases = map[string]string{
 	"kill":   CommandAttack,
 	"hit":    CommandAttack,
 
-	"kiss": CommandKiss,
+	"kiss":    CommandKiss,
+	"smooch":  CommandKiss,
+	"makeout": CommandKiss,
 }
 
 var multiWordVerbMerges = [][]string{
 	{"pick", "up"},
+	{"make", "out"},
 }
 
 type patToken struct {
