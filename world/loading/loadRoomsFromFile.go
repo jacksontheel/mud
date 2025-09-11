@@ -20,10 +20,18 @@ func LoadRoomsFromFile(filename string) (map[string]*entities.Room, error) {
 	}
 
 	result := make(map[string]*entities.Room, len(rawRooms))
+
+	// A list of all room ids referenced in every rooms' exits, used for validation
+	referencedRooms := make(map[string]struct{}, len(rawRooms))
+
 	for _, rr := range rawRooms {
 		items, err := decodeEntities(rr.RawItems)
 		if err != nil {
 			return nil, fmt.Errorf("room %q: %w", rr.Id, err)
+		}
+
+		for _, v := range rr.Exits {
+			referencedRooms[v] = struct{}{}
 		}
 
 		result[rr.Id] = entities.NewRoom(
@@ -34,10 +42,16 @@ func LoadRoomsFromFile(filename string) (map[string]*entities.Room, error) {
 		)
 	}
 
+	// validate that every referenced room in the exits, exists
+	for k := range referencedRooms {
+		if _, ok := result[k]; !ok {
+			return nil, fmt.Errorf("referenced room id '%s' does not exist", k)
+		}
+	}
+
 	return result, nil
 }
 
-// decodeEntities turns raw JSON items into *entities.Entity
 func decodeEntities(raws []rawItem) ([]*entities.Entity, error) {
 	entitiesList := make([]*entities.Entity, 0, len(raws))
 	for _, raw := range raws {
