@@ -74,49 +74,49 @@ type patToken struct {
 	slotType   string
 }
 
-type Pattern struct {
+type pattern struct {
 	kind   string
 	tokens []patToken
 }
 
-func Lit(word string) patToken {
+func lit(word string) patToken {
 	return patToken{literal: word}
 }
-func Slot(slotType, name string) patToken {
+func slot(slotType, name string) patToken {
 	return patToken{slotName: name, slotType: slotType}
 }
-func SlotRest(slotType, name string) patToken {
+func slotRest(slotType, name string) patToken {
 	return patToken{slotName: name, slotType: slotType, slotIsRest: true}
 }
 
-var patterns = []Pattern{
+var patterns = []pattern{
 	{kind: CommandMove, tokens: []patToken{
-		Slot("direction", "direction"),
+		slot("direction", "direction"),
 	}},
 	{kind: CommandMove, tokens: []patToken{
-		Lit(CommandMove),
-		Slot("direction", "direction"),
+		lit(CommandMove),
+		slot("direction", "direction"),
 	}},
 
 	{kind: CommandTake, tokens: []patToken{
-		Lit(CommandTake),
-		SlotRest("object", "object"),
+		lit(CommandTake),
+		slotRest("object", "object"),
 	}},
 
 	{kind: CommandLook, tokens: []patToken{
-		Lit(CommandLook),
+		lit(CommandLook),
 	}},
 	{kind: CommandLook, tokens: []patToken{
-		Lit(CommandLook),
-		SlotRest("object", "object"),
+		lit(CommandLook),
+		slotRest("object", "object"),
 	}},
 	{kind: CommandAttack, tokens: []patToken{
-		Lit(CommandAttack),
-		SlotRest("object", "object"),
+		lit(CommandAttack),
+		slotRest("object", "object"),
 	}},
 	{kind: CommandKiss, tokens: []patToken{
-		Lit(CommandKiss),
-		SlotRest("object", "object"),
+		lit(CommandKiss),
+		slotRest("object", "object"),
 	}},
 }
 
@@ -184,7 +184,7 @@ func mergeSequences(tokens []string, merges [][]string) []string {
 	return out
 }
 
-func tryMatch(p Pattern, tokens []string) (ok bool, params map[string]string) {
+func tryMatch(p pattern, tokens []string) (ok bool, params map[string]string) {
 	params = map[string]string{}
 	ti := 0
 	for pi := 0; pi < len(p.tokens); pi++ {
@@ -229,7 +229,7 @@ func tryMatch(p Pattern, tokens []string) (ok bool, params map[string]string) {
 		ti++
 	}
 
-	// Must consume all tokens
+	// must consume all tokens
 	if ti != len(tokens) {
 		return false, nil
 	}

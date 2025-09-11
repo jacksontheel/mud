@@ -7,21 +7,15 @@ import (
 	"strings"
 
 	"example.com/mud/world"
-	"example.com/mud/world/loading"
 )
 
 func main() {
-	rooms, err := loading.LoadRoomsFromFile("data/world.json")
+	gameWorld, err := world.NewWorldFromJSONFile("data/world.json")
 	if err != nil {
 		panic(err)
 	}
 
-	gameWorld := world.World{
-		RoomMap: rooms,
-	}
-
-	centralRoom := rooms["central"]
-	player := world.NewPlayer(&gameWorld, centralRoom)
+	player := gameWorld.AddPlayer()
 
 	in := bufio.NewScanner(os.Stdin)
 	fmt.Println(player.OpeningMessage())
