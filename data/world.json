@@ -29,7 +29,11 @@
             "rules": [
               {
                 "when": {
-                  "type": "attack"
+                  "type": "attack",
+                  "source": {
+                    "type": "tag",
+                    "value": "player"
+                  }
                 },
                 "then": [
                   {
@@ -44,7 +48,11 @@
               },
               {
                 "when": {
-                  "type": "kiss"
+                  "type": "kiss",
+                  "source": {
+                    "type": "tag",
+                    "value": "player"
+                  }
                 },
                 "then": [
                   {

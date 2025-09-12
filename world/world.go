@@ -23,8 +23,8 @@ func NewWorldFromJSONFile(fileName string) (*World, error) {
 	}, nil
 }
 
-func (w *World) AddPlayer() *Player {
-	return NewPlayer(w, w.roomMap["central"])
+func (w *World) AddPlayer(name string) *Player {
+	return NewPlayer(name, w, w.roomMap["central"])
 }
 
 func (w *World) Parse(player *Player, line string) string {
@@ -45,7 +45,7 @@ func (w *World) Parse(player *Player, line string) string {
 }
 
 func (w *World) GetNeighboringRoom(r *entities.Room, direction string) *entities.Room {
-	if roomId, ok := r.Exits[direction]; ok {
+	if roomId, ok := r.GetNeighboringRoomId(direction); ok {
 		room := w.roomMap[roomId]
 		return room
 	}

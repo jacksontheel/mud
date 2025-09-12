@@ -15,7 +15,7 @@ func main() {
 		panic(err)
 	}
 
-	player := gameWorld.AddPlayer()
+	player := gameWorld.AddPlayer("Craig")
 
 	in := bufio.NewScanner(os.Stdin)
 	fmt.Println(player.OpeningMessage())

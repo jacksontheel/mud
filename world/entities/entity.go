@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -30,4 +31,26 @@ func Find[T any](e *Entity) (T, bool) {
 		}
 	}
 	return zero, false
+}
+
+// util funcs for entities with common components
+func (e *Entity) getAliases() []string {
+	if a, ok := Find[Aliased](e); ok {
+		return a.Aliases()
+	}
+	return nil
+}
+
+func (e *Entity) getDescription() string {
+	if d, ok := Find[Descriptioned](e); ok {
+		return strings.TrimSpace(d.Description())
+	}
+	return ""
+}
+
+func (e *Entity) getTags() []string {
+	if t, ok := Find[Tagged](e); ok {
+		return t.Tags()
+	}
+	return nil
 }

@@ -5,11 +5,11 @@ import (
 )
 
 type Room struct {
-	Id              string
-	Description     string
-	Exits           map[string]string
-	EntitiesByAlias map[string]*Entity
-	AliasesByEntity map[*Entity][]string
+	id              string
+	description     string
+	exits           map[string]string
+	entitiesByAlias map[string]*Entity
+	aliasesByEntity map[*Entity][]string
 }
 
 func NewRoom(id, description string, exits map[string]string, entities []*Entity) *Room {
@@ -23,57 +23,61 @@ func NewRoom(id, description string, exits map[string]string, entities []*Entity
 	entitiesByAlias := make(map[string]*Entity, len(entities)*2)
 	aliasesByEntity := make(map[*Entity][]string, len(entities))
 
-	for _, e := range entities {
-		aliases := getAliases(e)
-		if len(aliases) == 0 {
-			continue
-		}
-		// TODO NORMALIZE BEFORE PUTTING IN HERE
-		aliasesByEntity[e] = aliases
-		for _, alias := range aliases {
-			key := normalizeAlias(alias)
-			if key == "" {
-				continue
-			}
-			entitiesByAlias[key] = e
-		}
+	room := Room{
+		id:              id,
+		description:     strings.TrimSpace(description),
+		exits:           exits,
+		entitiesByAlias: entitiesByAlias,
+		aliasesByEntity: aliasesByEntity,
 	}
 
-	return &Room{
-		Id:              id,
-		Description:     strings.TrimSpace(description),
-		Exits:           exits,
-		EntitiesByAlias: entitiesByAlias,
-		AliasesByEntity: aliasesByEntity,
+	for _, e := range entities {
+		room.AddEntity(e)
 	}
+
+	return &room
 }
 
-func (r *Room) GetDescription() string {
+func (r *Room) GetDescription(requester *Entity) string {
 	var b strings.Builder
 
-	roomDesc := strings.TrimSpace(r.Description)
+	roomDesc := strings.TrimSpace(r.description)
 	if roomDesc != "" {
 		b.WriteString(roomDesc)
 		b.WriteString("\n")
 	}
 
-	for e := range r.AliasesByEntity {
-		if d := getDescription(e); d != "" {
+	for e := range r.aliasesByEntity {
+		if e == requester {
+			continue
+		}
+
+		if d := e.getDescription(); d != "" {
 			b.WriteString(d)
 			b.WriteString("\n")
 		}
 	}
 
 	b.WriteString("\n")
-	b.WriteString(r.GetExits())
+	b.WriteString(r.GetExitText())
 	return b.String()
 }
 
-func (r *Room) GetExits() string {
+func (r *Room) GetEntityByAlias(alias string) (*Entity, bool) {
+	entity, ok := r.entitiesByAlias[alias]
+	return entity, ok
+}
+
+func (r *Room) GetNeighboringRoomId(direction string) (string, bool) {
+	id, ok := r.exits[direction]
+	return id, ok
+}
+
+func (r *Room) GetExitText() string {
 	var b strings.Builder
 	b.WriteString("Exits: [")
 
-	for exit := range r.Exits {
+	for exit := range r.exits {
 		b.WriteString(exit)
 		b.WriteString(", ")
 	}
@@ -82,20 +86,32 @@ func (r *Room) GetExits() string {
 	return result
 }
 
+func (r *Room) AddEntity(e *Entity) {
+	aliases := e.getAliases()
+	if len(aliases) == 0 {
+		return
+	}
+	// TODO NORMALIZE BEFORE PUTTING IN HERE
+	r.aliasesByEntity[e] = aliases
+	for _, alias := range aliases {
+		key := normalizeAlias(alias)
+		if key == "" {
+			continue
+		}
+		r.entitiesByAlias[key] = e
+	}
+}
+
+func (r *Room) RemoveEntity(e *Entity) {
+	delete(r.aliasesByEntity, e)
+
+	for _, a := range e.getAliases() {
+		if r.entitiesByAlias[a] == e {
+			delete(r.entitiesByAlias, a)
+		}
+	}
+}
+
 func normalizeAlias(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
-}
-
-func getAliases(e *Entity) []string {
-	if a, ok := Find[Aliased](e); ok {
-		return a.Aliases()
-	}
-	return nil
-}
-
-func getDescription(e *Entity) string {
-	if d, ok := Find[Descriptioned](e); ok {
-		return strings.TrimSpace(d.Description())
-	}
-	return ""
 }
