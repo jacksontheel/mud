@@ -8,18 +8,21 @@ import (
 
 func TestASay(t *testing.T) {
 	cases := []struct {
+		name  string
 		input string
 		want  string
 	}{
-		{"Hail Brother", "Hail Brother"},
-		{"", ""},
-		{"!@#$%^&*(),./';", "!@#$%^&*(),./';"},
+		{"basic", "Hail Brother", "Hail Brother"},
+		{"empty", "", ""},
+		{"special characters", "!@#$%^&*(),./';", "!@#$%^&*(),./';"},
 	}
 
-	for _, c := range cases {
-		a := &entities.ASay{Text: c.input}
-		if got := a.Say(); got != c.want {
-			t.Errorf("Say() = %q, want %q", got, c.want)
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			a := &entities.ASay{Text: tc.input}
+			if got := a.Say(); got != tc.want {
+				t.Errorf("Say() = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
