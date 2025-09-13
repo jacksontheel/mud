@@ -91,13 +91,12 @@ func (r *Room) AddEntity(e *Entity) {
 	if len(aliases) == 0 {
 		return
 	}
-	// TODO NORMALIZE BEFORE PUTTING IN HERE
-	r.aliasesByEntity[e] = aliases
 	for _, alias := range aliases {
 		key := normalizeAlias(alias)
 		if key == "" {
 			continue
 		}
+		r.aliasesByEntity[e] = append(r.aliasesByEntity[e], key)
 		r.entitiesByAlias[key] = e
 	}
 }

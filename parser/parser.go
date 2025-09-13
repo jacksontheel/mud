@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	CommandMove   = "move"
-	CommandTake   = "take"
-	CommandLook   = "look"
-	CommandAttack = "attack"
-	CommandKiss   = "kiss"
+	CommandMove      = "move"
+	CommandTake      = "take"
+	CommandLook      = "look"
+	CommandAttack    = "attack"
+	CommandKiss      = "kiss"
+	CommandInventory = "inventory"
 )
 
 type Command struct {
@@ -63,6 +64,8 @@ var verbAliases = map[string]string{
 	"kiss":    CommandKiss,
 	"smooch":  CommandKiss,
 	"makeout": CommandKiss,
+
+	"i": CommandInventory,
 }
 
 var multiWordVerbMerges = [][]string{
@@ -103,7 +106,7 @@ var patterns = []pattern{
 
 	{kind: CommandTake, tokens: []patToken{
 		lit(CommandTake),
-		slotRest("object", "object"),
+		slotRest("target", "target"),
 	}},
 
 	{kind: CommandLook, tokens: []patToken{
@@ -111,15 +114,27 @@ var patterns = []pattern{
 	}},
 	{kind: CommandLook, tokens: []patToken{
 		lit(CommandLook),
-		slotRest("object", "object"),
+		slotRest("target", "target"),
+	}},
+
+	{kind: CommandAttack, tokens: []patToken{
+		lit(CommandAttack),
+		slot("target", "target"),
+		lit("with"),
+		slot("instrument", "instrument"),
 	}},
 	{kind: CommandAttack, tokens: []patToken{
 		lit(CommandAttack),
-		slotRest("object", "object"),
+		slotRest("target", "target"),
 	}},
+
 	{kind: CommandKiss, tokens: []patToken{
 		lit(CommandKiss),
-		slotRest("object", "object"),
+		slotRest("target", "target"),
+	}},
+
+	{kind: CommandInventory, tokens: []patToken{
+		lit(CommandInventory),
 	}},
 }
 
@@ -252,15 +267,11 @@ func validateSlot(slotType string, toks []string) (string, bool) {
 		}
 
 		return "", false
-	case "object":
+	default:
 		if len(toks) == 0 {
 			return "", false
 		}
-
-		// the object name is the remaining tokens joined
 		return strings.Join(toks, " "), true
-	default:
-		return "", false
 	}
 }
 

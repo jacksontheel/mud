@@ -4,18 +4,30 @@ type Action interface {
 	Id() string
 }
 
-type Say interface {
-	Say() string
-}
-
-type ASay struct {
+type Say struct {
 	Text string `json:"text"`
 }
 
-func (a *ASay) Id() string {
+var _ Action = &Say{}
+
+func (a *Say) Id() string {
 	return "say"
 }
 
-func (a *ASay) Say() string {
-	return a.Text
+type RemoveItemFromInventory struct {
+	Value          string         `json:"value"`
+	InventoryOwner EntitySelector `json:"inventoryOwner"`
+	Item           EntitySelector `json:"item"`
+}
+
+var _ Action = &RemoveItemFromInventory{}
+
+func (a *RemoveItemFromInventory) Id() string {
+	return "removeItemFromInventory"
+}
+
+func (a *RemoveItemFromInventory) RemoveItemFromInventory(eInventory *Entity, eToRemove *Entity) {
+	if inventory, ok := GetComponent[*Inventory](eInventory); ok {
+		inventory.RemoveItem(eToRemove)
+	}
 }

@@ -33,6 +33,38 @@
                   "source": {
                     "type": "tag",
                     "value": "player"
+                  },
+                  "instrument": {
+                    "type": "tag",
+                    "value": "egg"
+                  }
+                },
+                "then": [
+                  {
+                    "type": "say",
+                    "text": "As you beat the poor man, he eats the egg whole."
+                  },
+                  {
+                    "type": "removeItemFromInventory",
+                    "inventoryOwner": {
+                      "type": "source"
+                    },
+                    "item": {
+                      "type": "instrument"
+                    }
+                  },
+                  {
+                    "type": "say",
+                    "text": "You are no longer carrying the egg."
+                  }
+                ]
+              },
+              {
+                "when": {
+                  "type": "attack",
+                  "source": {
+                    "type": "tag",
+                    "value": "player"
                   }
                 },
                 "then": [

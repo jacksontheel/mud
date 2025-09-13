@@ -12,8 +12,8 @@ type componentFactory func(raw json.RawMessage) (any, error)
 var componentRegistry = map[string]componentFactory{}
 
 func init() {
-	RegisterComponentTypeDefaultConstructor[entities.CAliased]("aliased")
-	RegisterComponentTypeDefaultConstructor[entities.CDescriptioned]("descriptioned")
+	RegisterComponentTypeDefaultConstructor[entities.Aliased]("aliased")
+	RegisterComponentTypeDefaultConstructor[entities.Descriptioned]("descriptioned")
 	RegisterComponentType("eventful", func(raw json.RawMessage) (any, error) {
 		var env rawEventful
 		if err := json.Unmarshal(raw, &env); err != nil {
@@ -53,7 +53,7 @@ func init() {
 			}
 		}
 
-		return &entities.CEventful{
+		return &entities.Eventful{
 			Rules: rules,
 		}, nil
 	})

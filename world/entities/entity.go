@@ -1,56 +1,63 @@
 package entities
 
 import (
+	"reflect"
 	"strings"
 	"sync"
 )
 
 type Entity struct {
 	mu         sync.RWMutex
-	components []any
+	components map[reflect.Type]any
 }
 
 func NewEntity() *Entity {
-	return &Entity{components: []any{}}
+	return &Entity{components: map[reflect.Type]any{}}
 }
 
 func (e *Entity) Add(c any) *Entity {
 	e.mu.Lock()
-	e.components = append(e.components, c)
+	e.components[reflect.TypeOf(c)] = c
 	e.mu.Unlock()
 	return e
 }
 
-func Find[T any](e *Entity) (T, bool) {
-	var zero T
+func GetComponent[C Component](e *Entity) (C, bool) {
+	var zero C
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	for _, c := range e.components {
-		if v, ok := c.(T); ok {
-			return v, true
-		}
+	v, ok := e.components[reflect.TypeOf((*C)(nil)).Elem()]
+	if !ok {
+		return zero, false
 	}
-	return zero, false
+	return v.(C), true
 }
 
 // util funcs for entities with common components
+func (e *Entity) getName() string {
+	if n, ok := GetComponent[*Named](e); ok {
+		return strings.TrimSpace(n.Name)
+	}
+	return ""
+}
+
 func (e *Entity) getAliases() []string {
-	if a, ok := Find[Aliased](e); ok {
-		return a.Aliases()
+	if a, ok := GetComponent[*Aliased](e); ok {
+		return a.Aliases
 	}
 	return nil
 }
 
 func (e *Entity) getDescription() string {
-	if d, ok := Find[Descriptioned](e); ok {
-		return strings.TrimSpace(d.Description())
+	if d, ok := GetComponent[*Descriptioned](e); ok {
+		return strings.TrimSpace(d.Description)
 	}
 	return ""
 }
 
 func (e *Entity) getTags() []string {
-	if t, ok := Find[Tagged](e); ok {
-		return t.Tags()
+	if t, ok := GetComponent[*Tagged](e); ok {
+		return t.Tags
 	}
 	return nil
 }

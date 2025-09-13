@@ -33,11 +33,13 @@ func (w *World) Parse(player *Player, line string) string {
 	case parser.CommandMove:
 		fmt.Println(player.Move(cmd.Params["direction"]))
 	case parser.CommandLook:
-		fmt.Println(player.Look(cmd.Params["object"]))
+		fmt.Println(player.Look(cmd.Params["target"]))
+	case parser.CommandInventory:
+		fmt.Println(player.Inventory())
 	case parser.CommandAttack:
-		fmt.Println(player.Attack(cmd.Params["object"]))
+		fmt.Println(player.Attack(cmd.Params["target"], cmd.Params["instrument"]))
 	case parser.CommandKiss:
-		fmt.Println(player.Kiss(cmd.Params["object"]))
+		fmt.Println(player.Kiss(cmd.Params["target"]))
 	default:
 		fmt.Println("I don't understand that.")
 	}

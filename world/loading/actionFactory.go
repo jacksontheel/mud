@@ -11,7 +11,8 @@ type actionFactory func(raw json.RawMessage) (entities.Action, error)
 var actionRegistry = map[string]actionFactory{}
 
 func init() {
-	RegisterActionTypeDefaultConstructor[*entities.ASay]("say")
+	RegisterActionTypeDefaultConstructor[*entities.Say]("say")
+	RegisterActionTypeDefaultConstructor[*entities.RemoveItemFromInventory]("removeItemFromInventory")
 }
 
 func RegisterActionType(typ string, ctor actionFactory) {

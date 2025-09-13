@@ -6,9 +6,10 @@ import (
 )
 
 type Event struct {
-	Type   string
-	Source *Entity
-	Target *Entity
+	Type       string
+	Source     *Entity
+	Instrument *Entity
+	Target     *Entity
 }
 
 type EntitySelector struct {
@@ -27,22 +28,22 @@ type Rule struct {
 	Then []Action
 }
 
-type Eventful interface {
-	OnEvent(ev *Event) (string, bool)
-}
-
-var _ Eventful = &CEventful{}
-
-type CEventful struct {
+type Eventful struct {
 	Rules []Rule
 }
 
-func (c *CEventful) OnEvent(ev *Event) (string, bool) {
+var _ Component = &Eventful{}
+
+func (e *Eventful) Id() string {
+	return "eventful"
+}
+
+func (c *Eventful) OnEvent(ev *Event) (string, bool) {
 	for _, r := range c.Rules {
 		if matchWhen(r.When, ev) {
 			var b strings.Builder
 			for _, a := range r.Then {
-				if response, ok := performAction(a); ok {
+				if response, ok := performAction(a, ev); ok {
 					b.WriteString(fmt.Sprintf("%v\n", response))
 				}
 			}
@@ -54,12 +55,18 @@ func (c *CEventful) OnEvent(ev *Event) (string, bool) {
 }
 
 func matchWhen(w When, ev *Event) bool {
-	return w.Type == ev.Type && matchEntityToSelector(w.Source, ev.Source, ev.Target)
+	return w.Type == ev.Type &&
+		matchEntityToSelector(w.Source, ev.Source, ev.Target) &&
+		matchEntityToSelector(w.Instrument, ev.Instrument, ev.Target)
 }
 
 func matchEntityToSelector(selector *EntitySelector, target, listener *Entity) bool {
 	if selector == nil {
 		return true
+	}
+
+	if target == nil {
+		return false
 	}
 
 	switch selector.Type {
@@ -78,10 +85,32 @@ func matchEntityToSelector(selector *EntitySelector, target, listener *Entity) b
 	return false
 }
 
-func performAction(action Action) (string, bool) {
-	if action.Id() == "say" {
-		return action.(*ASay).Say(), true
+func performAction(action Action, ev *Event) (string, bool) {
+	switch action.Id() {
+	case "say":
+		return action.(*Say).Text, true
+	case "removeItemFromInventory":
+		removeItemAction := action.(*RemoveItemFromInventory)
+
+		inventoryOwner := findEntityFromSelector(removeItemAction.InventoryOwner, ev)
+		item := findEntityFromSelector(removeItemAction.Item, ev)
+
+		removeItemAction.RemoveItemFromInventory(inventoryOwner, item)
 	}
 
 	return "", false
+}
+
+func findEntityFromSelector(selector EntitySelector, ev *Event) *Entity {
+	switch selector.Type {
+	case "source":
+		return ev.Source
+	case "instrument":
+		return ev.Instrument
+	case "target":
+		return ev.Target
+	}
+
+	fmt.Println("This shouldn't happen")
+	return nil
 }
