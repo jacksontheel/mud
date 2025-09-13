@@ -51,8 +51,14 @@ func (c *Inventory) AddItem(e *Entity) {
 }
 
 func (c *Inventory) RemoveItem(e *Entity) {
-	// for each alias, delete from itemsByAlias
-	// delete entry from aliasesByItem
+	aliases, ok := c.aliasesByItem[e]
+	if !ok {
+		return // abort if key does not exist
+	}
+	for _, alias := range aliases {
+		delete(c.itemByAlias, alias) // for each alias, delete from itemsByAlias
+	}
+	delete(c.aliasesByItem, e) // delete entry from aliasesByItem
 }
 
 func (c *Inventory) Print() string {
