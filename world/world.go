@@ -5,26 +5,21 @@ import (
 
 	"example.com/mud/parser"
 	"example.com/mud/world/entities"
-	"example.com/mud/world/loading"
+	"example.com/mud/world/entities/components"
 )
 
 type World struct {
-	roomMap map[string]*entities.Room
+	entityMap map[string]*entities.Entity
 }
 
-func NewWorldFromJSONFile(fileName string) (*World, error) {
-	rooms, err := loading.LoadRoomsFromFile("data/world.json")
-	if err != nil {
-		return nil, err
-	}
-
+func NewWorld(entityMap map[string]*entities.Entity) *World {
 	return &World{
-		roomMap: rooms,
-	}, nil
+		entityMap: entityMap,
+	}
 }
 
 func (w *World) AddPlayer(name string) *Player {
-	return NewPlayer(name, w, w.roomMap["central"])
+	return NewPlayer(name, w, w.entityMap["LivingRoom"])
 }
 
 func (w *World) Parse(player *Player, line string) string {
@@ -46,9 +41,9 @@ func (w *World) Parse(player *Player, line string) string {
 	return ""
 }
 
-func (w *World) GetNeighboringRoom(r *entities.Room, direction string) *entities.Room {
+func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entities.Entity {
 	if roomId, ok := r.GetNeighboringRoomId(direction); ok {
-		room := w.roomMap[roomId]
+		room := w.entityMap[roomId]
 		return room
 	}
 	return nil
