@@ -2,7 +2,6 @@ package dsl
 
 import (
 	"fmt"
-	"strings"
 
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
@@ -68,11 +67,11 @@ func BuildAll(ast *DSL) (map[string]*entities.Entity, error) {
 			return nil, fmt.Errorf("entity %q has children but no Room component", name)
 		}
 		for _, childName := range be.pendingChildren {
-			proto, ok := built[unquote(childName)]
+			proto, ok := built[childName]
 			if !ok {
 				return nil, fmt.Errorf("entity %q references unknown child %q", name, childName)
 			}
-			room.AddChild(proto.ent.Copy())
+			room.GetChildren().AddChild(proto.ent.Copy())
 		}
 	}
 
@@ -116,7 +115,7 @@ func buildPrototype(def *EntityDef) (*builtEntity, error) {
 			e.Add(id)
 
 		case "Room":
-			rm := &components.Room{}
+			rm := components.NewRoom()
 			for _, f := range comp.Fields {
 				switch f.Key {
 				case "exits":
@@ -139,8 +138,4 @@ func buildPrototype(def *EntityDef) (*builtEntity, error) {
 	}
 
 	return &builtEntity{ent: e, pendingChildren: pending}, nil
-}
-
-func unquote(s string) string {
-	return strings.Trim(s, `"`)
 }

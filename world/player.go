@@ -25,7 +25,7 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 	playerEntity.Add(components.NewInventory([]*entities.Entity{getEgg()}))
 
 	if room, ok := entities.GetComponent[*components.Room](playerEntity); ok {
-		room.AddChild(playerEntity)
+		room.GetChildren().AddChild(playerEntity)
 	}
 
 	// TODO ERROR HANDLING
@@ -50,7 +50,7 @@ func getEgg() *entities.Entity {
 }
 
 func (p *Player) OpeningMessage() string {
-	return "You are a hero."
+	return fmt.Sprintf("You are a hero.\n%s", p.world.GetRoomDescription(p.currentRoom))
 }
 
 func (p *Player) Move(direction string) string {
@@ -61,18 +61,14 @@ func (p *Player) Move(direction string) string {
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
 	if newRoom != nil {
-		currentRoom.RemoveChild(p.entity)
+		currentRoom.GetChildren().RemoveChild(p.entity)
 		p.currentRoom = newRoom
 
 		if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-			room.AddChild(p.entity)
+			room.GetChildren().AddChild(p.entity)
 		}
 
-		if identity, ok := entities.GetComponent[*components.Identity](p.currentRoom); ok {
-			return identity.Description
-		}
-
-		return "You enter a room that cannot be described."
+		return p.world.GetRoomDescription(p.currentRoom)
 	}
 
 	return "You can't go there."
@@ -80,10 +76,7 @@ func (p *Player) Move(direction string) string {
 
 func (p *Player) Look(alias string) string {
 	if alias == "" {
-		if identity, ok := entities.GetComponent[*components.Identity](p.currentRoom); ok {
-			return identity.Description
-		}
-		return "The room you are in cannot be described."
+		return p.world.GetRoomDescription(p.currentRoom)
 	}
 
 	if target, ok := p.getEntityByAlias(alias); ok {
@@ -174,6 +167,9 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 
 // Get entity by first looking in player's current room, then in their inventory
 func (p *Player) getEntityByAlias(alias string) (*entities.Entity, bool) {
-	// TODO broke this
+	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
+		return room.GetChildren().GetChildByAlias(alias)
+	}
+	// TODO ERROR HANDLING
 	return nil, false
 }

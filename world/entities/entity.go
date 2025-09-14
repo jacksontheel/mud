@@ -17,7 +17,7 @@ func NewEntity() *Entity {
 func (e *Entity) Copy() *Entity {
 	newEntity := NewEntity()
 	for _, c := range e.components {
-		e.Add(c.Copy())
+		newEntity.Add(c.Copy())
 	}
 	return newEntity
 }

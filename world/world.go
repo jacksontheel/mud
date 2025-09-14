@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/mud/parser"
 	"example.com/mud/world/entities"
@@ -47,4 +48,32 @@ func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entiti
 		return room
 	}
 	return nil
+}
+
+func (w *World) GetRoomDescription(r *entities.Entity) string {
+	var b strings.Builder
+
+	room, ok := entities.GetComponent[*components.Room](r)
+	if !ok {
+		return "This is not a room"
+	}
+	roomIdentity, ok := entities.GetComponent[*components.Identity](r)
+	if !ok {
+		return "This room has no description"
+	}
+
+	roomDescription := strings.TrimSpace(roomIdentity.Description)
+	b.WriteString(roomDescription)
+	b.WriteString("\n")
+
+	for _, e := range room.GetChildren().GetChildren() {
+
+		if eIdentity, ok := entities.GetComponent[*components.Identity](e); ok {
+			b.WriteString(eIdentity.Description)
+			b.WriteString("\n")
+		}
+	}
+
+	b.WriteString(room.GetExitText())
+	return b.String()
 }

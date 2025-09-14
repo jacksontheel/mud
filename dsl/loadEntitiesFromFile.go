@@ -12,6 +12,7 @@ func LoadEntitiesFromFile(fileName string) (map[string]*entities.Entity, error) 
 	parser := participle.MustBuild[DSL](
 		participle.Lexer(dslLexer),
 		participle.Elide("Whitespace"),
+		participle.Unquote("String"),
 	)
 
 	data, err := os.ReadFile(fileName)
