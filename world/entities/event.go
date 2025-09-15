@@ -19,6 +19,6 @@ type When struct {
 }
 
 type Rule struct {
-	When When
+	When *When
 	Then []Action
 }

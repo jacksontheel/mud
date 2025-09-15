@@ -24,9 +24,9 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 
 	playerEntity.Add(components.NewInventory([]*entities.Entity{getEgg()}))
 
-	if room, ok := entities.GetComponent[*components.Room](playerEntity); ok {
-		room.GetChildren().AddChild(playerEntity)
-	}
+	// if room, ok := entities.GetComponent[*components.Room](playerEntity); ok {
+	// 	room.GetChildren().AddChild(playerEntity)
+	// }
 
 	// TODO ERROR HANDLING
 	return &Player{
@@ -50,7 +50,7 @@ func getEgg() *entities.Entity {
 }
 
 func (p *Player) OpeningMessage() string {
-	return fmt.Sprintf("You are a hero.\n%s", p.world.GetRoomDescription(p.currentRoom))
+	return p.world.GetRoomDescription(p.currentRoom)
 }
 
 func (p *Player) Move(direction string) string {
@@ -61,12 +61,12 @@ func (p *Player) Move(direction string) string {
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
 	if newRoom != nil {
-		currentRoom.GetChildren().RemoveChild(p.entity)
+		// currentRoom.GetChildren().RemoveChild(p.entity)
 		p.currentRoom = newRoom
 
-		if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-			room.GetChildren().AddChild(p.entity)
-		}
+		// if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
+		// 	room.GetChildren().AddChild(p.entity)
+		// }
 
 		return p.world.GetRoomDescription(p.currentRoom)
 	}

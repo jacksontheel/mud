@@ -8,7 +8,8 @@ entity LivingRoom {
 
     has Room {
         exits is {
-            "north": "BedRoom"
+            "north": "BedRoom",
+            "east": "Bathroom"
         }
 
         children is [
@@ -25,7 +26,12 @@ entity Couch {
         aliases is ["couch"]
         tags is ["furniture"]
     }
+
+    when attack {
+        say "As you beat the couch, a nickel falls out from under the cushion."
+    }
 }
+
 
 entity Lamp {
     has Identity {
@@ -33,6 +39,10 @@ entity Lamp {
         description is "A dimly lit lamp sits in the corner."
         aliases is ["lamp"]
         tags is ["furniture"]
+    }
+
+    when kiss {
+        say "You figure the lamp is roughly the dimensions of a person... you give it a kiss."
     }
 }
 
@@ -50,7 +60,8 @@ entity BedRoom {
         }
 
         children is [
-            "Bed"
+            "Bed",
+            "Lamp"
         ]
     }
 }
@@ -62,4 +73,32 @@ entity Bed {
         aliases is ["bed"]
         tags is ["furniture"]
     }
+}
+
+entity Bathroom {
+    has Identity {
+        name is "Bathroom"
+        description is "A bathroom, a perfect place to relax and excrete."
+        aliases is ["room"]
+        tags is ["room"]
+    }
+
+    has Room {
+        exits is {
+            "south": "LivingRoom"
+        }
+
+        children is [
+            "Toilet"
+        ]
+    }
+}
+
+entity Toilet {
+ has Identity {
+        name is "Toilet"
+        description is "A toilet, you piss and poop in here."
+        aliases is ["toilet"]
+        tags is ["furniture"]
+    }   
 }

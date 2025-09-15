@@ -7,7 +7,7 @@ import (
 )
 
 type Eventful struct {
-	Rules []entities.Rule
+	Rules []*entities.Rule
 }
 
 var _ entities.Component = &Eventful{}
@@ -37,7 +37,11 @@ func (c *Eventful) OnEvent(ev *entities.Event) (string, bool) {
 	return "", false
 }
 
-func matchWhen(w entities.When, ev *entities.Event) bool {
+func (c *Eventful) AddRule(rule *entities.Rule) {
+	c.Rules = append(c.Rules, rule)
+}
+
+func matchWhen(w *entities.When, ev *entities.Event) bool {
 	return w.Type == ev.Type &&
 		matchEntityToSelector(w.Source, ev.Source, ev.Target) &&
 		matchEntityToSelector(w.Instrument, ev.Instrument, ev.Target)

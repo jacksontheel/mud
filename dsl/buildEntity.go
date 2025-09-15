@@ -4,38 +4,27 @@ import (
 	"fmt"
 
 	"example.com/mud/world/entities"
+	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
 )
 
-// Optional helpers on your Literal node.
-func (l *Literal) AsMap() map[string]string {
-	if len(l.Pairs) == 0 {
-		return nil
-	}
-	m := make(map[string]string, len(l.Pairs))
-	for _, kv := range l.Pairs {
-		m[kv.Key] = kv.Value
-	}
-	return m
-}
-
-func (l *Literal) AsStrings() []string {
-	return append([]string(nil), l.Strings...)
-}
-
 type builtEntity struct {
-	ent             *entities.Entity
-	pendingChildren []string // names to resolve after all prototypes exist
+	name string
+	ent  *entities.Entity
+	def  *EntityDef
 }
 
-// BuildAll compiles a parsed DSL into concrete runtime entities.
-// It returns a name->entity map. "children" references are materialized as CLONED entities.
-func BuildAll(ast *DSL) (map[string]*entities.Entity, error) {
+// sidecar: prototypeName -> compName -> []childPrototypeNames
+type childRefs map[string]map[string][]string
+
+// turn a parsed DSL into concrete entities.
+// returns a name->entity map.
+// children references are materialized by recursively instantiating prototypes.
+func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 	if ast == nil {
 		return nil, fmt.Errorf("nil DSL")
 	}
 
-	// 1) Index defs by name for error messages, etc.
 	defs := make(map[string]*EntityDef, len(ast.Entities))
 	for _, ed := range ast.Entities {
 		if ed == nil {
@@ -47,95 +36,156 @@ func BuildAll(ast *DSL) (map[string]*entities.Entity, error) {
 		defs[ed.Name] = ed
 	}
 
-	// 2) First pass: build prototypes (no children resolved yet).
 	built := make(map[string]*builtEntity, len(defs))
+	pending := make(childRefs, len(defs))
+
 	for name, def := range defs {
-		be, err := buildPrototype(def)
+		be, err := buildPrototype(name, def, pending)
 		if err != nil {
 			return nil, fmt.Errorf("build %s: %w", name, err)
 		}
 		built[name] = be
 	}
 
-	// 3) Second pass: resolve children by cloning referenced prototypes.
-	for name, be := range built {
-		if len(be.pendingChildren) == 0 {
-			continue
-		}
-		room, ok := entities.GetComponent[*components.Room](be.ent)
-		if !ok {
-			return nil, fmt.Errorf("entity %q has children but no Room component", name)
-		}
-		for _, childName := range be.pendingChildren {
-			proto, ok := built[childName]
-			if !ok {
-				return nil, fmt.Errorf("entity %q references unknown child %q", name, childName)
-			}
-			room.GetChildren().AddChild(proto.ent.Copy())
-		}
-	}
-
-	// 4) Return final map
 	out := make(map[string]*entities.Entity, len(built))
-	for name, be := range built {
-		out[name] = be.ent
+	for name := range built {
+		inst, err := instantiate(name, built, pending, map[string]bool{})
+		if err != nil {
+			return nil, fmt.Errorf("instantiate %s: %w", name, err)
+		}
+		out[name] = inst
 	}
 	return out, nil
 }
 
-// buildPrototype creates an entity and fills components. It collects "children" names to resolve later.
-func buildPrototype(def *EntityDef) (*builtEntity, error) {
+// create component with components. collect child prototype names into the sidecar for later.
+func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntity, error) {
 	e := entities.NewEntity()
-	var pending []string
 
-	for _, comp := range def.Components {
-		switch comp.Name {
-		case "Identity":
-			id := &components.Identity{}
-			for _, f := range comp.Fields {
-				switch f.Key {
-				case "name":
-					if f.Value.String == nil {
-						return nil, fmt.Errorf("Identity.name must be a string")
-					}
-					id.Name = *f.Value.String
-				case "description":
-					if f.Value.String == nil {
-						return nil, fmt.Errorf("Identity.description must be a string")
-					}
-					id.Description = *f.Value.String
-				case "aliases":
-					id.Aliases = f.Value.AsStrings()
-				case "tags":
-					id.Tags = f.Value.AsStrings()
-				default:
-					return nil, fmt.Errorf("Identity: unknown field %q", f.Key)
-				}
+	for _, block := range def.Blocks {
+		if block.Rule != nil {
+			eventful, ok := entities.GetComponent[*components.Eventful](e)
+			if !ok {
+				eventful = &components.Eventful{Rules: []*entities.Rule{}}
+				e.Add(eventful)
 			}
-			e.Add(id)
-
-		case "Room":
-			rm := components.NewRoom()
-			for _, f := range comp.Fields {
-				switch f.Key {
-				case "exits":
-					m := f.Value.AsMap()
-					if m == nil {
-						m = map[string]string{}
-					}
-					rm.SetExits(m)
-				case "children":
-					pending = append(pending, f.Value.AsStrings()...)
-				default:
-					return nil, fmt.Errorf("Room: unknown field %q", f.Key)
-				}
+			rule, err := processRule(block.Rule)
+			if err != nil {
+				return nil, fmt.Errorf("could not process rule %s: %w", block.Rule.Command, err)
 			}
-			e.Add(rm)
+			eventful.AddRule(rule)
+			continue
+		}
 
-		default:
-			return nil, fmt.Errorf("unknown component %q", comp.Name)
+		if block.Component == nil {
+			continue
+		}
+
+		comp, err := processComponentNoChildren(block.Component)
+		if err != nil {
+			return nil, fmt.Errorf("could not process component %s: %w", block.Component.Name, err)
+		}
+		e.Add(comp)
+
+		for _, f := range block.Component.Fields {
+			if f.Key == "children" {
+				if pending[name] == nil {
+					pending[name] = make(map[string][]string)
+				}
+				pending[name][block.Component.Name] =
+					append(pending[name][block.Component.Name], f.Value.asStrings()...)
+			}
 		}
 	}
 
-	return &builtEntity{ent: e, pendingChildren: pending}, nil
+	return &builtEntity{name: name, ent: e, def: def}, nil
+}
+
+// recursively instantiate a named prototype and wire up children for all child-holding components.
+func instantiate(name string, protos map[string]*builtEntity, pending childRefs, visiting map[string]bool) (*entities.Entity, error) {
+	be, ok := protos[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown prototype %q", name)
+	}
+	if visiting[name] {
+		return nil, fmt.Errorf("cycle detected at %q", name)
+	}
+	visiting[name] = true
+	defer func() { visiting[name] = false }()
+
+	inst := be.ent.Copy()
+
+	// for each child-capable component on the entity, look up its pending child names from the prototype’s sidecar and attach recursively.
+	if rm, ok := entities.GetComponent[*components.Room](inst); ok {
+		slot := pending[name]["Room"]
+		if len(slot) > 0 {
+			for _, childName := range slot {
+				childInst, err := instantiate(childName, protos, pending, visiting)
+				if err != nil {
+					return nil, err
+				}
+				rm.GetChildren().AddChild(childInst)
+			}
+		}
+	}
+
+	return inst, nil
+}
+
+func processRule(def *RuleDef) (*entities.Rule, error) {
+	when, err := processWhen(def)
+	if err != nil {
+		return nil, fmt.Errorf("could not process 'when' for reaction on %s", def.Command)
+	}
+
+	then, err := processThen(def)
+	if err != nil {
+		return nil, fmt.Errorf("could not process 'then' for reaction on %s", def.Command)
+	}
+
+	return &entities.Rule{
+		When: when,
+		Then: then,
+	}, nil
+}
+
+func processWhen(def *RuleDef) (*entities.When, error) {
+	return &entities.When{
+		Type: def.Command,
+	}, nil
+}
+
+func processThen(def *RuleDef) ([]entities.Action, error) {
+	ret := make([]entities.Action, len(def.Actions))
+
+	for i, aDef := range def.Actions {
+		var newAction entities.Action
+
+		if aDef.Say != nil {
+			newAction = &actions.Say{
+				Text: aDef.Say.Value,
+			}
+		}
+
+		ret[i] = newAction
+	}
+
+	return ret, nil
+}
+
+// turn DSL pairs into map[string]string map
+func (l *Literal) asMap() map[string]string {
+	if len(l.Pairs) == 0 {
+		return nil
+	}
+	m := make(map[string]string, len(l.Pairs))
+	for _, kv := range l.Pairs {
+		m[kv.Key] = kv.Value
+	}
+	return m
+}
+
+// turn DSL Strings into []string
+func (l *Literal) asStrings() []string {
+	return append([]string(nil), l.Strings...)
 }

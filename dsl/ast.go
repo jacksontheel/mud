@@ -6,6 +6,8 @@ import (
 
 var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
+	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
 	{Name: "LBrack", Pattern: `\[`},
 	{Name: "RBrack", Pattern: `\]`},
@@ -21,13 +23,26 @@ type DSL struct {
 }
 
 type EntityDef struct {
-	Name       string          `"entity" @Ident`
-	Components []*ComponentDef `"{" { "has" @@ } "}"`
+	Name   string         `"entity" @Ident`
+	Blocks []*EntityBlock `"{" { @@ } "}"`
+}
+
+type EntityBlock struct {
+	Component *ComponentDef `  "has" @@ `
+	Rule      *RuleDef      `| "when" @@ `
 }
 
 type ComponentDef struct {
 	Name   string      `@Ident`
 	Fields []*FieldDef `"{" { @@ } "}"`
+}
+
+type RuleDef struct {
+	Command string       `@Ident`
+	By      *string      `[ "by" @Tag ]`
+	With    *string      `[ "with" @Tag ]`
+	On      *string      `[ "on" @Tag ]`
+	Actions []*ActionDef `"{" { @@ } "}"`
 }
 
 type FieldDef struct {
@@ -44,4 +59,18 @@ type Literal struct {
 	String  *string  `  @String`
 	Strings []string `| "[" @String { "," @String } "]"`
 	Pairs   []KV     `| "{" @@ { "," @@ } "}"`
+}
+
+type ActionDef struct {
+	Say  *SayAction  `  @@`
+	Give *GiveAction `| @@`
+}
+
+type SayAction struct {
+	Value string `"say" @String`
+}
+
+type GiveAction struct {
+	ItemID string `"give" @AtIdent`
+	Target string `"to" @Ident`
 }
