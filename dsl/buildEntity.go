@@ -25,11 +25,13 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 		return nil, fmt.Errorf("nil DSL")
 	}
 
+	// collect entities into name->EntityDef map
 	defs := make(map[string]*EntityDef, len(ast.Entities))
 	for _, ed := range ast.Entities {
 		if ed == nil {
 			continue
 		}
+		// error on duplicate entity name
 		if _, exists := defs[ed.Name]; exists {
 			return nil, fmt.Errorf("duplicate entity %q", ed.Name)
 		}
@@ -39,7 +41,9 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 	built := make(map[string]*builtEntity, len(defs))
 	pending := make(childRefs, len(defs))
 
+	// build prototypes of each entity and put them in name->builtEntity map
 	for name, def := range defs {
+		// build prototype and populate pending children
 		be, err := buildPrototype(name, def, pending)
 		if err != nil {
 			return nil, fmt.Errorf("build %s: %w", name, err)
@@ -47,6 +51,7 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 		built[name] = be
 	}
 
+	// fully instantiate prototypes by filling in their children
 	out := make(map[string]*entities.Entity, len(built))
 	for name := range built {
 		inst, err := instantiate(name, built, pending, map[string]bool{})
@@ -58,11 +63,12 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 	return out, nil
 }
 
-// create component with components. collect child prototype names into the sidecar for later.
+// create prototype entity with components. collect child prototype names into the sidecar for later.
 func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntity, error) {
 	e := entities.NewEntity()
 
 	for _, block := range def.Blocks {
+		// process rules
 		if block.Rule != nil {
 			eventful, ok := entities.GetComponent[*components.Eventful](e)
 			if !ok {
@@ -81,6 +87,7 @@ func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntit
 			continue
 		}
 
+		// process component into prototype without children
 		comp, err := processComponentNoChildren(block.Component)
 		if err != nil {
 			return nil, fmt.Errorf("could not process component %s: %w", block.Component.Name, err)
@@ -92,6 +99,8 @@ func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntit
 				if pending[name] == nil {
 					pending[name] = make(map[string][]string)
 				}
+
+				// populate pending children map
 				pending[name][block.Component.Name] =
 					append(pending[name][block.Component.Name], f.Value.asStrings()...)
 			}
