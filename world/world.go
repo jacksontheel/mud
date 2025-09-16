@@ -2,29 +2,25 @@ package world
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/mud/parser"
 	"example.com/mud/world/entities"
-	"example.com/mud/world/loading"
+	"example.com/mud/world/entities/components"
 )
 
 type World struct {
-	roomMap map[string]*entities.Room
+	entityMap map[string]*entities.Entity
 }
 
-func NewWorldFromJSONFile(fileName string) (*World, error) {
-	rooms, err := loading.LoadRoomsFromFile("data/world.json")
-	if err != nil {
-		return nil, err
-	}
-
+func NewWorld(entityMap map[string]*entities.Entity) *World {
 	return &World{
-		roomMap: rooms,
-	}, nil
+		entityMap: entityMap,
+	}
 }
 
 func (w *World) AddPlayer(name string) *Player {
-	return NewPlayer(name, w, w.roomMap["central"])
+	return NewPlayer(name, w, w.entityMap["LivingRoom"])
 }
 
 func (w *World) Parse(player *Player, line string) string {
@@ -46,10 +42,38 @@ func (w *World) Parse(player *Player, line string) string {
 	return ""
 }
 
-func (w *World) GetNeighboringRoom(r *entities.Room, direction string) *entities.Room {
+func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entities.Entity {
 	if roomId, ok := r.GetNeighboringRoomId(direction); ok {
-		room := w.roomMap[roomId]
+		room := w.entityMap[roomId]
 		return room
 	}
 	return nil
+}
+
+func (w *World) GetRoomDescription(r *entities.Entity) string {
+	var b strings.Builder
+
+	room, ok := entities.GetComponent[*components.Room](r)
+	if !ok {
+		return "This is not a room"
+	}
+	roomIdentity, ok := entities.GetComponent[*components.Identity](r)
+	if !ok {
+		return "This room has no description"
+	}
+
+	roomDescription := strings.TrimSpace(roomIdentity.Description)
+	b.WriteString(roomDescription)
+	b.WriteString("\n")
+
+	for _, e := range room.GetChildren().GetChildren() {
+
+		if eIdentity, ok := entities.GetComponent[*components.Identity](e); ok {
+			b.WriteString(eIdentity.Description)
+			b.WriteString("\n")
+		}
+	}
+
+	b.WriteString(room.GetExitText())
+	return b.String()
 }

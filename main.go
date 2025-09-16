@@ -6,14 +6,17 @@ import (
 	"os"
 	"strings"
 
+	"example.com/mud/dsl"
 	"example.com/mud/world"
 )
 
 func main() {
-	gameWorld, err := world.NewWorldFromJSONFile("data/world.json")
+	entityMap, err := dsl.LoadEntitiesFromFile("data/world.mud")
 	if err != nil {
 		panic(err)
 	}
+
+	gameWorld := world.NewWorld(entityMap)
 
 	player := gameWorld.AddPlayer("Craig")
 
