@@ -159,9 +159,39 @@ func processRule(def *RuleDef) (*entities.Rule, error) {
 }
 
 func processWhen(def *RuleDef) (*entities.When, error) {
+	sourceSelector, err := processWhenRef(def.By)
+	if err != nil {
+		return nil, fmt.Errorf("could not create selector for when reference %s: %w", *def.By, err)
+	}
+
+	instrumentSelector, err := processWhenRef(def.With)
+	if err != nil {
+		return nil, fmt.Errorf("could not create selector for when reference %s: %w", *def.With, err)
+	}
+
 	return &entities.When{
-		Type: def.Command,
+		Type:       def.Command,
+		Source:     sourceSelector,
+		Instrument: instrumentSelector,
 	}, nil
+}
+
+func processWhenRef(ref *string) (*entities.EntitySelector, error) {
+	if ref == nil || *ref == "" {
+		return nil, nil
+	}
+	value := *ref
+
+	switch value[0] {
+	case '#': // tag
+		value = value[1:]
+		return &entities.EntitySelector{
+			Type:  "tag",
+			Value: value,
+		}, nil
+	default:
+		return nil, fmt.Errorf("illegal value reference for when: %s", value)
+	}
 }
 
 func processThen(def *RuleDef) ([]entities.Action, error) {

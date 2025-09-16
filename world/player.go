@@ -170,8 +170,16 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 // Get entity by first looking in player's current room, then in their inventory
 func (p *Player) getEntityByAlias(alias string) (*entities.Entity, bool) {
 	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-		return room.GetChildren().GetChildByAlias(alias)
+		if e, ok := room.GetChildren().GetChildByAlias(alias); ok {
+			return e, true
+		}
 	}
-	// TODO ERROR HANDLING
+
+	if inventory, ok := entities.GetComponent[*components.Inventory](p.entity); ok {
+		if e, ok := inventory.GetChildren().GetChildByAlias(alias); ok {
+			return e, true
+		}
+	}
+
 	return nil, false
 }

@@ -62,15 +62,9 @@ type Literal struct {
 }
 
 type ActionDef struct {
-	Say  *SayAction  `  @@`
-	Give *GiveAction `| @@`
+	Say *SayAction `  @@`
 }
 
 type SayAction struct {
 	Value string `"say" @String`
-}
-
-type GiveAction struct {
-	ItemID string `"give" @AtIdent`
-	Target string `"to" @Ident`
 }

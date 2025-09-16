@@ -27,6 +27,10 @@ entity Couch {
         tags is ["furniture"]
     }
 
+    when attack by #player with #egg {
+        say "You hit the egg upon the couch, gently, as to not disturb the egg."
+    }
+
     when attack {
         say "As you beat the couch, a nickel falls out from under the cushion."
     }
@@ -41,7 +45,7 @@ entity Lamp {
         tags is ["furniture"]
     }
 
-    when kiss {
+    when kiss by #player {
         say "You figure the lamp is roughly the dimensions of a person... you give it a kiss."
     }
 }
@@ -85,7 +89,7 @@ entity Bathroom {
 
     has Room {
         exits is {
-            "south": "LivingRoom"
+            "west": "LivingRoom"
         }
 
         children is [
