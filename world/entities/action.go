@@ -1,6 +1,12 @@
 package entities
 
+type ActionType int
+
+const (
+	ActionSay ActionType = iota
+)
+
 type Action interface {
-	Id() string
+	Id() ActionType
 	Execute(ev *Event) (string, bool)
 }

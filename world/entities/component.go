@@ -1,6 +1,16 @@
 package entities
 
+type ComponentType int
+
+const (
+	ComponentRoom ComponentType = iota
+	ComponentIdentity
+	ComponentEventful
+	ComponentInventory
+)
+
 type Component interface {
+	Id() ComponentType
 	Copy() Component
 }
 

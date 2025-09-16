@@ -1,12 +1,18 @@
-package entities_test
+package actions
 
 import (
 	"testing"
 
 	"example.com/mud/world/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestASay(t *testing.T) {
+func TestId(t *testing.T) {
+	action := &Say{}
+	assert.Equal(t, action.Id(), entities.ActionSay)
+}
+
+func TestExecute(t *testing.T) {
 	cases := []struct {
 		name  string
 		input string
@@ -19,8 +25,10 @@ func TestASay(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			a := &entities.ASay{Text: tc.input}
-			if got := a.Say(); got != tc.want {
+			action := &Say{Text: tc.input}
+			response, _ := action.Execute(nil)
+
+			if got := response; got != tc.want {
 				t.Errorf("Say() = %q, want %q", got, tc.want)
 			}
 		})

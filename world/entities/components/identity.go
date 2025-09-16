@@ -15,6 +15,10 @@ type Identity struct {
 
 var _ entities.Component = &Identity{}
 
+func (i *Identity) Id() entities.ComponentType {
+	return entities.ComponentIdentity
+}
+
 func (i *Identity) Copy() entities.Component {
 	return &Identity{
 		Name:        i.Name,

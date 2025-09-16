@@ -22,7 +22,9 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 		Tags:        []string{"player"},
 	})
 
-	playerEntity.Add(components.NewInventory([]*entities.Entity{getEgg()}))
+	inventory := components.NewInventory()
+	inventory.GetChildren().AddChild(getEgg())
+	playerEntity.Add(inventory)
 
 	// if room, ok := entities.GetComponent[*components.Room](playerEntity); ok {
 	// 	room.GetChildren().AddChild(playerEntity)

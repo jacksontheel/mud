@@ -8,8 +8,8 @@ type Say struct {
 
 var _ entities.Action = &Say{}
 
-func (a *Say) Id() string {
-	return "say"
+func (a *Say) Id() entities.ActionType {
+	return entities.ActionSay
 }
 
 func (a *Say) Execute(ev *entities.Event) (string, bool) {

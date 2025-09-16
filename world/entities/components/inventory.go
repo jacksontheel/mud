@@ -7,67 +7,39 @@ import (
 )
 
 type Inventory struct {
-	itemByAlias   map[string]*entities.Entity
-	aliasesByItem map[*entities.Entity][]string
+	children *Children
 }
 
 var _ entities.Component = &Inventory{}
+var _ entities.ComponentWithChildren = &Inventory{}
+
+func (i *Inventory) Id() entities.ComponentType {
+	return entities.ComponentInventory
+}
 
 func (i *Inventory) Copy() entities.Component {
 	// right now copying inventories is not supported
 	// return a new empty inventory
-	return NewInventory([]*entities.Entity{})
+	return NewInventory()
 }
 
-func NewInventory(items []*entities.Entity) *Inventory {
-	itemsByAlias := make(map[string]*entities.Entity, len(items)*2)
-	aliasesByItem := make(map[*entities.Entity][]string, len(items))
-
-	inventory := Inventory{
-		itemByAlias:   itemsByAlias,
-		aliasesByItem: aliasesByItem,
-	}
-
-	for _, item := range items {
-		inventory.AddItem(item)
-	}
-	return &inventory
-}
-
-func (c *Inventory) GetItemByAlias(alias string) (*entities.Entity, bool) {
-	entity, ok := c.itemByAlias[alias]
-	return entity, ok
-}
-
-func (c *Inventory) AddItem(e *entities.Entity) {
-	aliases := GetAliases(e)
-	if len(aliases) == 0 {
-		return
-	}
-	for _, alias := range aliases {
-		c.aliasesByItem[e] = append(c.aliasesByItem[e], alias)
-		c.itemByAlias[alias] = e
+func NewInventory() *Inventory {
+	return &Inventory{
+		children: NewChildren(),
 	}
 }
 
-func (c *Inventory) RemoveItem(e *entities.Entity) {
-	aliases, ok := c.aliasesByItem[e]
-	if !ok {
-		return // abort if key does not exist
-	}
-	for _, alias := range aliases {
-		delete(c.itemByAlias, alias) // for each alias, delete from itemsByAlias
-	}
-	delete(c.aliasesByItem, e) // delete entry from aliasesByItem
+func (i *Inventory) GetChildren() entities.IChildren {
+	return i.children
 }
 
-func (c *Inventory) Print() string {
+func (i *Inventory) Print() string {
 	var b strings.Builder
 
 	b.WriteString("You are carrying: [")
 
-	for e := range c.aliasesByItem {
-		if n := GetName(e); n != "" {
+	for _, child := range i.GetChildren().GetChildren() {
+		if n := GetName(child); n != "" {
 			b.WriteString(n)
 			b.WriteString(", ")
 		}

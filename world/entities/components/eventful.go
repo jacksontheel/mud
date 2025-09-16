@@ -12,6 +12,10 @@ type Eventful struct {
 
 var _ entities.Component = &Eventful{}
 
+func (e *Eventful) Id() entities.ComponentType {
+	return entities.ComponentEventful
+}
+
 func (e *Eventful) Copy() entities.Component {
 	return &Eventful{
 		Rules: e.Rules,

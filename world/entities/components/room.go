@@ -20,6 +20,10 @@ func NewRoom() *Room {
 	}
 }
 
+func (r *Room) Id() entities.ComponentType {
+	return entities.ComponentRoom
+}
+
 func (r *Room) Copy() entities.Component {
 	// right now copying a room's children is not supported
 	// return a room with no children
