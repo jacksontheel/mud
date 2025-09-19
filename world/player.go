@@ -51,14 +51,15 @@ func getEgg() *entities.Entity {
 	return egg
 }
 
-func (p *Player) OpeningMessage() string {
-	return p.world.GetRoomDescription(p.currentRoom)
+func (p *Player) OpeningMessage() (string, error) {
+	msg, err := p.world.GetRoomDescription(p.currentRoom)
+	return msg, err
 }
 
-func (p *Player) Move(direction string) string {
-	currentRoom, ok := entities.GetComponent[*components.Room](p.currentRoom)
-	if !ok {
-		return "You cannot hope to leave this room, it isn't a room at all."
+func (p *Player) Move(direction string) (string, error) {
+	currentRoom, err := entities.RequireComponent[*components.Room](p.currentRoom)
+	if err != nil {
+		return "You cannot hope to leave this room, it isn't a room at all.", err
 	}
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
@@ -73,22 +74,21 @@ func (p *Player) Move(direction string) string {
 		return p.world.GetRoomDescription(p.currentRoom)
 	}
 
-	return "You can't go there."
+	return "You can't go there.", nil
 }
 
-func (p *Player) Look(alias string) string {
+func (p *Player) Look(alias string) (string, error) {
 	if alias == "" {
 		return p.world.GetRoomDescription(p.currentRoom)
 	}
 
 	if target, ok := p.getEntityByAlias(alias); ok {
-		if descriptioned, ok := entities.GetComponent[*components.Identity](target); ok {
-			return descriptioned.Description
+		if descriptioned, ok := entities.GetComponent[*components.Identity](target); ok { // potentially a RequireComponent
+			return descriptioned.Description, nil
 		}
-		return fmt.Sprintf("The %s before you is undescribable.", alias)
+		return fmt.Sprintf("The %s before you is undescribable.", alias), nil
 	}
-	return "You must be going mad. That's not here."
-
+	return "You must be going mad. That's not here.", nil
 }
 
 func (p *Player) Inventory() string {

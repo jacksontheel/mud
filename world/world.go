@@ -20,7 +20,7 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string) *Player {
-	return NewPlayer(name, w, w.entityMap["LivingRoom"])
+	return NewPlayer(name, w, w.entityMap["Lamp"])
 }
 
 func (w *World) Parse(player *Player, line string) string {
@@ -50,16 +50,16 @@ func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entiti
 	return nil
 }
 
-func (w *World) GetRoomDescription(r *entities.Entity) string {
+func (w *World) GetRoomDescription(r *entities.Entity) (string, error) {
 	var b strings.Builder
 
-	room, ok := entities.GetComponent[*components.Room](r)
-	if !ok {
-		return "This is not a room"
+	room, err := entities.RequireComponent[*components.Room](r)
+	if err != nil {
+		return "", err
 	}
 	roomIdentity, ok := entities.GetComponent[*components.Identity](r)
 	if !ok {
-		return "This room has no description"
+		return "This room has no description", nil
 	}
 
 	roomDescription := strings.TrimSpace(roomIdentity.Description)
@@ -75,5 +75,5 @@ func (w *World) GetRoomDescription(r *entities.Entity) string {
 	}
 
 	b.WriteString(room.GetExitText())
-	return b.String()
+	return b.String(), nil
 }
