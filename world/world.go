@@ -38,7 +38,7 @@ func (w *World) Bus() *Bus { return w.bus }
 
 func (w *World) DisconnectPlayer(p *Player) {
 	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-		room.GetChildren().RemoveChild(p.currentRoom)
+		room.GetChildren().RemoveChild(p.entity)
 	}
 
 	w.bus.Unsubscribe(p.currentRoom, p.entity)

@@ -24,7 +24,10 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 
 	message, err := player.OpeningMessage()
 	if err != nil {
-		fmt.Printf("Error received: %v", err)
+		err := fmt.Errorf("error received: %w", err)
+
+		fmt.Println(err.Error())
+		fmt.Fprintln(conn, err.Error())
 	} else {
 		fmt.Fprintln(conn, message)
 	}
@@ -68,7 +71,10 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 
 		message, err := gameWorld.Parse(player, line)
 		if err != nil {
-			fmt.Printf("Error received: %v", err)
+			err := fmt.Errorf("error received: %w", err)
+
+			fmt.Println(err.Error())
+			fmt.Fprintln(conn, err.Error())
 		} else {
 			fmt.Fprintln(conn, message)
 		}

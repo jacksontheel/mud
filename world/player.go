@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"example.com/mud/world/entities"
+	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
 )
 
@@ -27,6 +28,25 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 	inventory := components.NewInventory()
 	inventory.GetChildren().AddChild(getEgg())
 	playerEntity.Add(inventory)
+
+	playerEntity.Add(&components.Eventful{
+		Rules: []*entities.Rule{
+			{
+				When: &entities.When{
+					Type: "attack",
+					Source: &entities.EntitySelector{
+						Type:  "tag",
+						Value: "player",
+					},
+				},
+				Then: []entities.Action{
+					&actions.Say{
+						Text: "You beat a great big indent into this other person's head",
+					},
+				},
+			},
+		},
+	})
 
 	return &Player{
 		world:       world,
@@ -51,13 +71,17 @@ func getEgg() *entities.Entity {
 
 func (p *Player) OpeningMessage() (string, error) {
 	message, err := p.world.GetRoomDescription(p.currentRoom, p.entity)
-	return message, err
+	if err != nil {
+		return "", fmt.Errorf("opening message for player '%s': %w", p.name, err)
+	}
+
+	return message, nil
 }
 
 func (p *Player) Move(direction string) (string, error) {
 	currentRoom, err := entities.RequireComponent[*components.Room](p.currentRoom)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("move for player '%s': %w", p.name, err)
 	}
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
@@ -83,12 +107,15 @@ func (p *Player) Move(direction string) (string, error) {
 func (p *Player) Look(alias string) (string, error) {
 	if alias == "" {
 		message, err := p.world.GetRoomDescription(p.currentRoom, p.entity)
-		return message, err
+		if err != nil {
+			return "", fmt.Errorf("look room for player '%s': %w", p.name, err)
+		}
+		return message, nil
 	}
 
 	target, err := p.getEntityByAlias(alias)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get look target for player '%s': %w", p.name, err)
 	}
 
 	if target != nil {
@@ -103,7 +130,10 @@ func (p *Player) Look(alias string) (string, error) {
 func (p *Player) Inventory() (string, error) {
 	if inventory, ok := entities.GetComponent[*components.Inventory](p.entity); ok {
 		message, err := inventory.Print()
-		return message, err
+		if err != nil {
+			return "", fmt.Errorf("inventory print for player '%s': %w", p.name, err)
+		}
+		return message, nil
 	}
 	return "You couldn't possibly carry anything at all.", nil
 }
@@ -115,7 +145,11 @@ func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {
 			targetAlias,
 			fmt.Sprintf("Now is not the time to attack %s.", targetAlias),
 		)
-		return message, err
+		if err != nil {
+			return "", fmt.Errorf("attack for player '%s': %w", p.name, err)
+		}
+
+		return message, nil
 	}
 
 	message, err := p.actUponWith(
@@ -124,7 +158,11 @@ func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {
 		instrumentAlias,
 		fmt.Sprintf("You reconsider attacking %s with %s, it's ridiculous.", targetAlias, instrumentAlias),
 	)
-	return message, err
+	if err != nil {
+		return "", fmt.Errorf("attack with instrument for player '%s': %w", p.name, err)
+	}
+
+	return message, nil
 }
 
 func (p *Player) Kiss(alias string) (string, error) {
@@ -133,12 +171,16 @@ func (p *Player) Kiss(alias string) (string, error) {
 		alias,
 		fmt.Sprintf("You can be romantic with %s later.", alias),
 	)
-	return message, err
+	if err != nil {
+		return "", fmt.Errorf("kiss for player '%s': %w", p.name, err)
+	}
+
+	return message, nil
 }
 func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) {
 	target, err := p.getEntityByAlias(alias)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("act upon get target for player '%s': %w", p.name, err)
 	}
 
 	if target != nil {
@@ -150,7 +192,7 @@ func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) 
 			})
 
 			if err != nil {
-				return "", err
+				return "", fmt.Errorf("act upon on event for player '%s': %w", p.name, err)
 			}
 
 			if response != "" {
@@ -166,7 +208,7 @@ func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) 
 func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchResponse string) (string, error) {
 	target, err := p.getEntityByAlias(targetAlias)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("act upon with get target for player '%s': %w", p.name, err)
 	}
 	if target == nil {
 		return fmt.Sprintf("There is no %s here.", targetAlias), nil
@@ -174,7 +216,7 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 
 	instrument, err := p.getEntityByAlias(instrumentAlias)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("act upon with get instrument for player '%s': %w", p.name, err)
 	}
 	if instrument == nil {
 		return fmt.Sprintf("You don't have %s available.", instrumentAlias), nil
@@ -189,7 +231,7 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 		})
 
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("act upon with on event for player '%s': %w", p.name, err)
 		}
 
 		if response != "" {
@@ -203,7 +245,7 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 func (p *Player) getEntityByAlias(alias string) (*entities.Entity, error) {
 	room, err := entities.RequireComponent[*components.Room](p.currentRoom)
 	if err != nil {
-		return nil, fmt.Errorf("getEntityByAlias %w", err)
+		return nil, fmt.Errorf("getEntityByAlias for player '%s': %w", p.name, err)
 	} else {
 		if e, ok := room.GetChildren().GetChildByAlias(alias); ok {
 			return e, nil
