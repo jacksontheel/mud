@@ -22,7 +22,7 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
-	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
+	player := NewPlayer(name, w, w.entityMap["A1_SunlitEdge"])
 
 	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
 		room.GetChildren().AddChild(player.entity)
@@ -68,6 +68,8 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 	case parser.CommandKiss:
 		message, err := player.Kiss(cmd.Params["target"])
 		return message, err
+	case parser.CommandSay:
+		return player.Say(cmd.Params["message"]), nil
 	default:
 		return "I don't understand that.", nil
 	}

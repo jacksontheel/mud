@@ -138,6 +138,12 @@ func (p *Player) Inventory() (string, error) {
 	return "You couldn't possibly carry anything at all.", nil
 }
 
+func (p *Player) Say(message string) string {
+	p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s says, \"%s\"", p.name, message), p.entity)
+
+	return fmt.Sprintf("You say: \"%s\"", message)
+}
+
 func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {
 	if instrumentAlias == "" {
 		message, err := p.actUpon(

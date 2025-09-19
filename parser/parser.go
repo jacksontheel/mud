@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"regexp"
 	"strings"
 
 	"example.com/mud/models"
@@ -14,6 +13,7 @@ const (
 	CommandAttack    = "attack"
 	CommandKiss      = "kiss"
 	CommandInventory = "inventory"
+	CommandSay       = "say"
 )
 
 type Command struct {
@@ -66,6 +66,8 @@ var verbAliases = map[string]string{
 	"makeout": CommandKiss,
 
 	"i": CommandInventory,
+
+	"say": CommandSay,
 }
 
 var multiWordVerbMerges = [][]string{
@@ -136,14 +138,15 @@ var patterns = []pattern{
 	{kind: CommandInventory, tokens: []patToken{
 		lit(CommandInventory),
 	}},
-}
 
-var punctRe = regexp.MustCompile(`[[:punct:]]`)
+	{kind: CommandSay, tokens: []patToken{
+		lit(CommandSay),
+		slotRest("message", "message"),
+	}},
+}
 
 func tokenize(input string) []string {
 	s := strings.ToLower(strings.TrimSpace(input))
-	// remove punctuation
-	s = punctRe.ReplaceAllString(s, " ")
 	parts := splitCompact(s)
 
 	// merge multi-word verbs
