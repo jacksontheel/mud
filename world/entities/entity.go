@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -38,4 +39,15 @@ func GetComponent[C Component](e *Entity) (C, bool) {
 		return zero, false
 	}
 	return v.(C), true
+}
+
+func RequireComponent[C Component](e *Entity) (C, error) {
+	c, ok := GetComponent[C](e)
+
+	if ok {
+		return c, nil
+	}
+
+	var zero C
+	return zero, fmt.Errorf("entity does not have component %s", zero.Id().String())
 }

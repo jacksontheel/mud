@@ -21,7 +21,14 @@ func main() {
 	player := gameWorld.AddPlayer("Craig")
 
 	in := bufio.NewScanner(os.Stdin)
-	fmt.Println(player.OpeningMessage())
+
+	openingMessage, err := player.OpeningMessage()
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println(openingMessage)
+	}
+
 	for {
 		fmt.Print("> ")
 		if !in.Scan() {
@@ -34,6 +41,11 @@ func main() {
 		if strings.ToLower(line) == "quit" {
 			break
 		}
-		gameWorld.Parse(player, line)
+		message, err := gameWorld.Parse(player, line)
+		if err != nil {
+			fmt.Println(err.Error())
+		} else if message != "" {
+			fmt.Println(message)
+		}
 	}
 }
