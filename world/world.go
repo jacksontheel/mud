@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"strings"
 
 	"example.com/mud/parser"
@@ -10,16 +11,43 @@ import (
 
 type World struct {
 	entityMap map[string]*entities.Entity
+	bus       *Bus
 }
 
 func NewWorld(entityMap map[string]*entities.Entity) *World {
 	return &World{
 		entityMap: entityMap,
+		bus:       NewBus(),
 	}
 }
 
-func (w *World) AddPlayer(name string) *Player {
-	return NewPlayer(name, w, w.entityMap["LivingRoom"])
+func (w *World) AddPlayer(name string, inbox chan string) *Player {
+	player := NewPlayer(name, w, w.entityMap["A1_SunlitEdge"])
+
+	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
+		room.GetChildren().AddChild(player.entity)
+	}
+
+	w.bus.Subscribe(player.currentRoom, player.entity, inbox)
+	w.Bus().Publish(player.currentRoom, fmt.Sprintf("%s enters the room.", player.name), player.entity)
+
+	return player
+}
+
+func (w *World) Bus() *Bus { return w.bus }
+
+func (w *World) DisconnectPlayer(p *Player) {
+	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
+		room.GetChildren().RemoveChild(p.entity)
+	}
+
+	w.bus.Unsubscribe(p.currentRoom, p.entity)
+	w.Bus().Publish(p.currentRoom, fmt.Sprintf("%s leaves the room.", p.name), p.entity)
+}
+
+func (w *World) Publish(player *Player, message string) {
+	exclude := player.entity
+	w.bus.Publish(player.currentRoom, message, exclude)
 }
 
 func (w *World) Parse(player *Player, line string) (string, error) {
@@ -40,6 +68,8 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 	case parser.CommandKiss:
 		message, err := player.Kiss(cmd.Params["target"])
 		return message, err
+	case parser.CommandSay:
+		return player.Say(cmd.Params["message"]), nil
 	default:
 		return "I don't understand that.", nil
 	}
@@ -53,7 +83,7 @@ func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entiti
 	return nil
 }
 
-func (w *World) GetRoomDescription(r *entities.Entity) (string, error) {
+func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity) (string, error) {
 	var b strings.Builder
 
 	room, err := entities.RequireComponent[*components.Room](r)
@@ -70,6 +100,9 @@ func (w *World) GetRoomDescription(r *entities.Entity) (string, error) {
 	b.WriteString("\n")
 
 	for _, e := range room.GetChildren().GetChildren() {
+		if e == exclude {
+			continue
+		}
 
 		if eIdentity, ok := entities.GetComponent[*components.Identity](e); ok {
 			b.WriteString(eIdentity.Description)
