@@ -9,6 +9,7 @@ import (
 
 type Player struct {
 	world       *World
+	name        string
 	entity      *entities.Entity
 	currentRoom *entities.Entity
 }
@@ -26,13 +27,14 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 	inventory.GetChildren().AddChild(getEgg())
 	playerEntity.Add(inventory)
 
-	// if room, ok := entities.GetComponent[*components.Room](playerEntity); ok {
-	// 	room.GetChildren().AddChild(playerEntity)
-	// }
+	if room, ok := entities.GetComponent[*components.Room](currentRoom); ok {
+		room.GetChildren().AddChild(playerEntity)
+	}
 
 	// TODO ERROR HANDLING
 	return &Player{
 		world:       world,
+		name:        name,
 		entity:      playerEntity,
 		currentRoom: currentRoom,
 	}
@@ -52,7 +54,7 @@ func getEgg() *entities.Entity {
 }
 
 func (p *Player) OpeningMessage() string {
-	return p.world.GetRoomDescription(p.currentRoom)
+	return p.world.GetRoomDescription(p.currentRoom, p.entity)
 }
 
 func (p *Player) Move(direction string) string {
@@ -63,14 +65,19 @@ func (p *Player) Move(direction string) string {
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
 	if newRoom != nil {
-		// currentRoom.GetChildren().RemoveChild(p.entity)
+		p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s leaves the room.", p.name), p.entity)
+
+		currentRoom.GetChildren().RemoveChild(p.entity)
 		p.currentRoom = newRoom
 
-		// if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-		// 	room.GetChildren().AddChild(p.entity)
-		// }
+		if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
+			room.GetChildren().AddChild(p.entity)
+		}
 
-		return p.world.GetRoomDescription(p.currentRoom)
+		p.world.Bus().Move(p.currentRoom, p.entity)
+		p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s enters the room.", p.name), p.entity)
+
+		return p.world.GetRoomDescription(p.currentRoom, p.entity)
 	}
 
 	return "You can't go there."
@@ -78,7 +85,7 @@ func (p *Player) Move(direction string) string {
 
 func (p *Player) Look(alias string) string {
 	if alias == "" {
-		return p.world.GetRoomDescription(p.currentRoom)
+		return p.world.GetRoomDescription(p.currentRoom, p.entity)
 	}
 
 	if target, ok := p.getEntityByAlias(alias); ok {
