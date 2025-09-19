@@ -22,9 +22,14 @@ func (e *Eventful) Copy() entities.Component {
 	}
 }
 
-func (c *Eventful) OnEvent(ev *entities.Event) (string, bool) {
+func (c *Eventful) OnEvent(ev *entities.Event) (string, error) {
 	for _, r := range c.Rules {
-		if matchWhen(r.When, ev) {
+		match, err := matchWhen(r.When, ev)
+		if err != nil {
+			return "", err
+		}
+
+		if match {
 			var b strings.Builder
 			for _, a := range r.Then {
 				if resp, ok := a.Execute(ev); ok && resp != "" {
@@ -35,43 +40,63 @@ func (c *Eventful) OnEvent(ev *entities.Event) (string, bool) {
 				}
 			}
 			// only match on first match, return after
-			return b.String(), true
+			return b.String(), nil
 		}
 	}
-	return "", false
+	return "", nil
 }
 
 func (c *Eventful) AddRule(rule *entities.Rule) {
 	c.Rules = append(c.Rules, rule)
 }
 
-func matchWhen(w *entities.When, ev *entities.Event) bool {
-	return w.Type == ev.Type &&
-		matchEntityToSelector(w.Source, ev.Source, ev.Target) &&
-		matchEntityToSelector(w.Instrument, ev.Instrument, ev.Target)
-}
+func matchWhen(w *entities.When, ev *entities.Event) (bool, error) {
 
-func matchEntityToSelector(selector *entities.EntitySelector, target, listener *entities.Entity) bool {
-	if selector == nil {
-		return true
+	sourceMatch, err := matchEntityToSelector(w.Source, ev.Source, ev.Target)
+	if err != nil {
+		return false, err
 	}
 
+	instrumentMatch, err := matchEntityToSelector(w.Instrument, ev.Instrument, ev.Target)
+	if err != nil {
+		return false, err
+	}
+
+	return w.Type == ev.Type && sourceMatch && instrumentMatch, nil
+}
+
+func matchEntityToSelector(selector *entities.EntitySelector, target, listener *entities.Entity) (bool, error) {
+	// if there is no selector for target
+	// default true
+	if selector == nil {
+		return true, nil
+	}
+
+	// if there is a selector for target
+	// but target entity is nil
+	// e.g. source selector with no event source
+	// default false
 	if target == nil {
-		return false
+		return false, nil
 	}
 
 	switch selector.Type {
 	case "self":
-		return target == listener
+		return target == listener, nil
 	case "tag":
-		for _, t := range GetTags(target) {
+		identity, err := entities.RequireComponent[*Identity](target)
+		if err != nil {
+			return false, err
+		}
+
+		for _, t := range identity.Tags {
 			if selector.Value == t {
-				return true
+				return true, nil
 			}
 		}
 	default:
-		return false
+		return false, nil
 	}
 
-	return false
+	return false, nil
 }

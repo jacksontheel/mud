@@ -33,17 +33,22 @@ func (i *Inventory) GetChildren() entities.IChildren {
 	return i.children
 }
 
-func (i *Inventory) Print() string {
+func (i *Inventory) Print() (string, error) {
 	var b strings.Builder
 
 	b.WriteString("You are carrying: [")
 
 	for _, child := range i.GetChildren().GetChildren() {
-		if n := GetName(child); n != "" {
+		identity, err := entities.RequireComponent[*Identity](child)
+		if err != nil {
+			return "", err
+		}
+
+		if n := identity.Name; n != "" {
 			b.WriteString(n)
 			b.WriteString(", ")
 		}
 	}
 
-	return strings.TrimSuffix(b.String(), ", ") + "]"
+	return strings.TrimSuffix(b.String(), ", ") + "]", nil
 }

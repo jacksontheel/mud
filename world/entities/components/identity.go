@@ -1,8 +1,6 @@
 package components
 
 import (
-	"strings"
-
 	"example.com/mud/world/entities"
 )
 
@@ -26,32 +24,4 @@ func (i *Identity) Copy() entities.Component {
 		Aliases:     i.Aliases,
 		Tags:        i.Tags,
 	}
-}
-
-func GetName(e *entities.Entity) string {
-	if identity, ok := entities.GetComponent[*Identity](e); ok {
-		return strings.TrimSpace(identity.Name)
-	}
-	return ""
-}
-
-func GetDescription(e *entities.Entity) string {
-	if identity, ok := entities.GetComponent[*Identity](e); ok {
-		return strings.TrimSpace(identity.Description)
-	}
-	return ""
-}
-
-func GetAliases(e *entities.Entity) []string {
-	if identity, ok := entities.GetComponent[*Identity](e); ok {
-		return identity.Aliases
-	}
-	return []string{}
-}
-
-func GetTags(e *entities.Entity) []string {
-	if identity, ok := entities.GetComponent[*Identity](e); ok {
-		return identity.Tags
-	}
-	return []string{}
 }

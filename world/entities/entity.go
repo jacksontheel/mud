@@ -42,10 +42,6 @@ func GetComponent[C Component](e *Entity) (C, bool) {
 }
 
 func RequireComponent[C Component](e *Entity) (C, error) {
-	// call getcomponent
-	// if ok return the component from getcomponent & nil
-	// else return 0 for component and error
-
 	c, ok := GetComponent[C](e)
 
 	if ok {
@@ -53,6 +49,5 @@ func RequireComponent[C Component](e *Entity) (C, error) {
 	}
 
 	var zero C
-
-	return zero, fmt.Errorf("entity does not have component")
+	return zero, fmt.Errorf("entity does not have component %s", zero.Id().String())
 }

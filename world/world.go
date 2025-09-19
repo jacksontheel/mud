@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"strings"
 
 	"example.com/mud/parser"
@@ -20,26 +19,30 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string) *Player {
-	return NewPlayer(name, w, w.entityMap["Lamp"])
+	return NewPlayer(name, w, w.entityMap["LivingRoom"])
 }
 
-func (w *World) Parse(player *Player, line string) string {
+func (w *World) Parse(player *Player, line string) (string, error) {
 	cmd := parser.Parse(line)
 	switch cmd.Kind {
 	case parser.CommandMove:
-		fmt.Println(player.Move(cmd.Params["direction"]))
+		message, err := player.Move(cmd.Params["direction"])
+		return message, err
 	case parser.CommandLook:
-		fmt.Println(player.Look(cmd.Params["target"]))
+		message, err := player.Look(cmd.Params["target"])
+		return message, err
 	case parser.CommandInventory:
-		fmt.Println(player.Inventory())
+		message, err := player.Inventory()
+		return message, err
 	case parser.CommandAttack:
-		fmt.Println(player.Attack(cmd.Params["target"], cmd.Params["instrument"]))
+		message, err := player.Attack(cmd.Params["target"], cmd.Params["instrument"])
+		return message, err
 	case parser.CommandKiss:
-		fmt.Println(player.Kiss(cmd.Params["target"]))
+		message, err := player.Kiss(cmd.Params["target"])
+		return message, err
 	default:
-		fmt.Println("I don't understand that.")
+		return "I don't understand that.", nil
 	}
-	return ""
 }
 
 func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entities.Entity {
