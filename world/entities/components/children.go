@@ -14,15 +14,22 @@ func NewChildren() *Children {
 	}
 }
 
-func (c *Children) AddChild(child *entities.Entity) {
-	aliases := GetAliases(child)
+func (c *Children) AddChild(child *entities.Entity) error {
+	identity, err := entities.RequireComponent[*Identity](child)
+	if err != nil {
+		return err
+	}
+
+	aliases := identity.Aliases
 	if len(aliases) == 0 {
-		return
+		return nil
 	}
 	for _, alias := range aliases {
 		c.aliasesByChild[child] = append(c.aliasesByChild[child], alias)
 		c.childByAlias[alias] = child
 	}
+
+	return nil
 }
 
 func (c *Children) RemoveChild(child *entities.Entity) {

@@ -22,7 +22,12 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 	inbox := make(chan string, 64)
 	player := gameWorld.AddPlayer(name, inbox)
 
-	fmt.Fprintln(conn, player.OpeningMessage())
+	message, err := player.OpeningMessage()
+	if err != nil {
+		fmt.Printf("Error received: %v", err)
+	} else {
+		fmt.Fprintln(conn, message)
+	}
 
 	// start consuming incoming messages
 	go handleConnectionIncoming(conn, inbox)
@@ -60,7 +65,13 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 		if strings.ToLower(line) == "quit" {
 			break
 		}
-		fmt.Fprintln(conn, gameWorld.Parse(player, line))
+
+		message, err := gameWorld.Parse(player, line)
+		if err != nil {
+			fmt.Printf("Error received: %v", err)
+		} else {
+			fmt.Fprintln(conn, message)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

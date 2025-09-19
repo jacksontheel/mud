@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"example.com/mud/parser"
 	"example.com/mud/world/entities"
@@ -12,7 +11,6 @@ import (
 
 type World struct {
 	entityMap map[string]*entities.Entity
-	mu        sync.RWMutex
 	bus       *Bus
 }
 
@@ -25,15 +23,24 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
 	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
+
+	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
+		room.GetChildren().AddChild(player.entity)
+	}
+
 	w.bus.Subscribe(player.currentRoom, player.entity, inbox)
 	w.Bus().Publish(player.currentRoom, fmt.Sprintf("%s enters the room.", player.name), player.entity)
+
 	return player
 }
 
 func (w *World) Bus() *Bus { return w.bus }
 
 func (w *World) DisconnectPlayer(p *Player) {
-	// TODO remove player from room
+	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
+		room.GetChildren().RemoveChild(p.currentRoom)
+	}
+
 	w.bus.Unsubscribe(p.currentRoom, p.entity)
 	w.Bus().Publish(p.currentRoom, fmt.Sprintf("%s leaves the room.", p.name), p.entity)
 }
@@ -43,21 +50,26 @@ func (w *World) Publish(player *Player, message string) {
 	w.bus.Publish(player.currentRoom, message, exclude)
 }
 
-func (w *World) Parse(player *Player, line string) string {
+func (w *World) Parse(player *Player, line string) (string, error) {
 	cmd := parser.Parse(line)
 	switch cmd.Kind {
 	case parser.CommandMove:
-		return player.Move(cmd.Params["direction"])
+		message, err := player.Move(cmd.Params["direction"])
+		return message, err
 	case parser.CommandLook:
-		return player.Look(cmd.Params["target"])
+		message, err := player.Look(cmd.Params["target"])
+		return message, err
 	case parser.CommandInventory:
-		return player.Inventory()
+		message, err := player.Inventory()
+		return message, err
 	case parser.CommandAttack:
-		return player.Attack(cmd.Params["target"], cmd.Params["instrument"])
+		message, err := player.Attack(cmd.Params["target"], cmd.Params["instrument"])
+		return message, err
 	case parser.CommandKiss:
-		return player.Kiss(cmd.Params["target"])
+		message, err := player.Kiss(cmd.Params["target"])
+		return message, err
 	default:
-		return "I don't understand that."
+		return "I don't understand that.", nil
 	}
 }
 
@@ -69,16 +81,16 @@ func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entiti
 	return nil
 }
 
-func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity) string {
+func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity) (string, error) {
 	var b strings.Builder
 
-	room, ok := entities.GetComponent[*components.Room](r)
-	if !ok {
-		return "This is not a room"
+	room, err := entities.RequireComponent[*components.Room](r)
+	if err != nil {
+		return "", err
 	}
 	roomIdentity, ok := entities.GetComponent[*components.Identity](r)
 	if !ok {
-		return "This room has no description"
+		return "This room has no description", nil
 	}
 
 	roomDescription := strings.TrimSpace(roomIdentity.Description)
@@ -97,5 +109,5 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 	}
 
 	b.WriteString(room.GetExitText())
-	return b.String()
+	return b.String(), nil
 }
