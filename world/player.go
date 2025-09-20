@@ -42,11 +42,11 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 				Then: []entities.Action{
 					&actions.Print{
 						Target: actions.PrintTargetSource,
-						Text:   "You beat a great big indent into this other person's head",
+						Text:   "You beat a great big indent into {target}'s head",
 					},
 					&actions.Print{
 						Target: actions.PrintTargetTarget,
-						Text:   "Your head is caved in.",
+						Text:   "{source} caves your head in.",
 					},
 				},
 			},
