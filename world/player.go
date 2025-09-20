@@ -151,6 +151,10 @@ func (p *Player) Whisper(target string, message string) (string, error) {
 		return "", fmt.Errorf("whisper error for player '%s', to target '%v': %w", p.name, recipient, err)
 	}
 
+	if recipient == nil {
+		return "you utter a whisper, but nobody hears it.", nil
+	}
+
 	whisper := fmt.Sprintf("%s whispers to you: \"%s\"", p.name, message)
 	p.world.bus.PublishTo(p.currentRoom, recipient, whisper)
 
