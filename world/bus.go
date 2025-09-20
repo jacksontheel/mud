@@ -95,3 +95,16 @@ func (b *Bus) Publish(room *entities.Entity, text string, exclude *entities.Enti
 		}
 	}
 }
+
+func (b *Bus) PublishTo(room *entities.Entity, recipient *entities.Entity, text string) {
+	b.mu.RLock()
+	subscribers := b.roomSubscribers[room]
+	inbox := subscribers[recipient]
+	b.mu.RUnlock()
+
+	select {
+	case inbox <- text:
+	default:
+		// drop if receiver is slow
+	}
+}
