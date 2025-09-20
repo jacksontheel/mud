@@ -46,7 +46,7 @@ func (w *World) DisconnectPlayer(p *Player) {
 }
 
 func (w *World) Publish(player *Player, message string) {
-	w.bus.Publish(player.currentRoom, message, player.entity)
+	w.bus.Publish(player.currentRoom, message, []*entities.Entity{player.entity})
 }
 
 func (w *World) Parse(player *Player, line string) (string, error) {

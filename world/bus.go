@@ -75,12 +75,17 @@ func (b *Bus) Move(toRoom *entities.Entity, player *entities.Entity) {
 	}
 }
 
-func (b *Bus) Publish(room *entities.Entity, text string, exclude *entities.Entity) {
+func (b *Bus) Publish(room *entities.Entity, text string, exclude []*entities.Entity) {
+	excludeSet := make(map[*entities.Entity]struct{}, len(exclude))
+	for _, ex := range exclude {
+		excludeSet[ex] = struct{}{}
+	}
+
 	b.mu.RLock()
 	subscribers := b.roomSubscribers[room]
 	var targets []chan string
 	for p, inbox := range subscribers {
-		if exclude != nil && p == exclude {
+		if _, excluded := excludeSet[p]; excluded {
 			continue
 		}
 		targets = append(targets, inbox)

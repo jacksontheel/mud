@@ -29,15 +29,12 @@ entity Couch {
 
     when attack by #player with #egg {
         print source "You hit the egg upon the couch, gently, as to not disturb the egg."
-    }
-
-    when attack by #player with #player {
-        print source "You beat your own head against the couch."
-        print instrument "Your brain bleeds as you use your own head as a weapon."
+        publish "{source} hits their egg upon the couch, smiling vacantly to themselves."
     }
 
     when attack {
-        print source "As you beat the couch, a nickel falls out from under the cushion."
+        print source "The springs of the couch groan as you beat upon them."
+        publish "{source} beats upon the couch, its old springs groaning."
     }
 }
 
@@ -52,6 +49,7 @@ entity Lamp {
 
     when kiss by #player {
         print source "You figure the lamp is roughly the dimensions of a person... you give it a kiss."
+        publish "{source} grabs the lamp and plants a passionate kiss upon it."
     }
 }
 

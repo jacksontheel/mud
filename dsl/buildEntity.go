@@ -200,15 +200,19 @@ func processThen(def *RuleDef) ([]entities.Action, error) {
 	for i, aDef := range def.Actions {
 		var newAction entities.Action
 
-		printTarget := actions.StringToPrintTarget(aDef.Print.Target)
-		if printTarget == actions.PrintTargetUnknown {
-			return nil, fmt.Errorf("unknown print target %s", aDef.Print.Target)
-		}
-
 		if aDef.Print != nil {
+			printTarget := actions.StringToPrintTarget(aDef.Print.Target)
+			if printTarget == actions.PrintTargetUnknown {
+				return nil, fmt.Errorf("unknown print target %s", aDef.Print.Target)
+			}
+
 			newAction = &actions.Print{
 				Text:   aDef.Print.Value,
 				Target: actions.StringToPrintTarget(aDef.Print.Target), // error out
+			}
+		} else if aDef.Publish != nil {
+			newAction = &actions.Publish{
+				Text: aDef.Publish.Value,
 			}
 		}
 
