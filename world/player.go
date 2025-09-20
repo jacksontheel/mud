@@ -86,7 +86,7 @@ func (p *Player) Move(direction string) (string, error) {
 
 	newRoom := p.world.GetNeighboringRoom(currentRoom, direction)
 	if newRoom != nil {
-		p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s leaves the room.", p.name), p.entity)
+		p.world.Publish(p, fmt.Sprintf("%s leaves the room.", p.name))
 
 		currentRoom.GetChildren().RemoveChild(p.entity)
 		p.currentRoom = newRoom
@@ -96,7 +96,7 @@ func (p *Player) Move(direction string) (string, error) {
 		}
 
 		p.world.Bus().Move(p.currentRoom, p.entity)
-		p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s enters the room.", p.name), p.entity)
+		p.world.Publish(p, fmt.Sprintf("%s enters the room.", p.name))
 
 		return p.world.GetRoomDescription(p.currentRoom, p.entity)
 	}
@@ -139,9 +139,26 @@ func (p *Player) Inventory() (string, error) {
 }
 
 func (p *Player) Say(message string) string {
-	p.world.Bus().Publish(p.currentRoom, fmt.Sprintf("%s says, \"%s\"", p.name, message), p.entity)
+	p.world.Publish(p, fmt.Sprintf("%s says, \"%s\"", p.name, message))
 
 	return fmt.Sprintf("You say: \"%s\"", message)
+}
+
+func (p *Player) Whisper(target string, message string) (string, error) {
+	recipient, err := p.getEntityByAlias(target)
+
+	if err != nil {
+		return "", fmt.Errorf("whisper error for player '%s', to target '%v': %w", p.name, recipient, err)
+	}
+
+	if recipient == nil {
+		return "you utter a whisper, but nobody hears it.", nil
+	}
+
+	whisper := fmt.Sprintf("%s whispers to you: \"%s\"", p.name, message)
+	p.world.bus.PublishTo(p.currentRoom, recipient, whisper)
+
+	return fmt.Sprintf("You whisper to %s: \"%s\"", target, message), nil
 }
 
 func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {

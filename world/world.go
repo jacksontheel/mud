@@ -29,7 +29,7 @@ func (w *World) AddPlayer(name string, inbox chan string) *Player {
 	}
 
 	w.bus.Subscribe(player.currentRoom, player.entity, inbox)
-	w.Bus().Publish(player.currentRoom, fmt.Sprintf("%s enters the room.", player.name), player.entity)
+	w.Publish(player, fmt.Sprintf("%s enters the room.", player.name))
 
 	return player
 }
@@ -42,12 +42,11 @@ func (w *World) DisconnectPlayer(p *Player) {
 	}
 
 	w.bus.Unsubscribe(p.currentRoom, p.entity)
-	w.Bus().Publish(p.currentRoom, fmt.Sprintf("%s leaves the room.", p.name), p.entity)
+	w.Publish(p, fmt.Sprintf("%s leaves the room.", p.name))
 }
 
 func (w *World) Publish(player *Player, message string) {
-	exclude := player.entity
-	w.bus.Publish(player.currentRoom, message, exclude)
+	w.bus.Publish(player.currentRoom, message, player.entity)
 }
 
 func (w *World) Parse(player *Player, line string) (string, error) {
@@ -70,6 +69,9 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 		return message, err
 	case parser.CommandSay:
 		return player.Say(cmd.Params["message"]), nil
+	case parser.CommandWhisper:
+		message, err := player.Whisper(cmd.Params["target"], cmd.Params["message"])
+		return message, err
 	default:
 		return "I don't understand that.", nil
 	}
