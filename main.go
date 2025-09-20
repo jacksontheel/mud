@@ -75,7 +75,7 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 
 			fmt.Println(err.Error())
 			fmt.Fprintln(conn, err.Error())
-		} else {
+		} else if message != "" {
 			fmt.Fprintln(conn, message)
 		}
 	}

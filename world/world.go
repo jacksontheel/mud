@@ -22,7 +22,7 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
-	player := NewPlayer(name, w, w.entityMap["A1_SunlitEdge"])
+	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
 
 	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
 		room.GetChildren().AddChild(player.entity)
@@ -46,7 +46,7 @@ func (w *World) DisconnectPlayer(p *Player) {
 }
 
 func (w *World) Publish(player *Player, message string) {
-	w.bus.Publish(player.currentRoom, message, player.entity)
+	w.bus.Publish(player.currentRoom, message, []*entities.Entity{player.entity})
 }
 
 func (w *World) Parse(player *Player, line string) (string, error) {

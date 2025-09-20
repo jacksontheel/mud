@@ -40,8 +40,13 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 					},
 				},
 				Then: []entities.Action{
-					&actions.Say{
-						Text: "You beat a great big indent into this other person's head",
+					&actions.Print{
+						Target: actions.PrintTargetSource,
+						Text:   "You beat a great big indent into {target}'s head",
+					},
+					&actions.Print{
+						Target: actions.PrintTargetTarget,
+						Text:   "{source} caves your head in.",
 					},
 				},
 			},
@@ -208,18 +213,20 @@ func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) 
 
 	if target != nil {
 		if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
-			response, err := eventful.OnEvent(&entities.Event{
-				Type:   action,
-				Source: p.entity,
-				Target: target,
+			match, err := eventful.OnEvent(&entities.Event{
+				Type:      action,
+				Publisher: p.world.bus,
+				Room:      p.currentRoom,
+				Source:    p.entity,
+				Target:    target,
 			})
 
 			if err != nil {
 				return "", fmt.Errorf("act upon on event for player '%s': %w", p.name, err)
 			}
 
-			if response != "" {
-				return response, nil
+			if match {
+				return "", nil
 			}
 		}
 		return noMatchResponse, nil
@@ -246,8 +253,10 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 	}
 
 	if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
-		response, err := eventful.OnEvent(&entities.Event{
+		match, err := eventful.OnEvent(&entities.Event{
 			Type:       action,
+			Publisher:  p.world.bus,
+			Room:       p.currentRoom,
 			Source:     p.entity,
 			Instrument: instrument,
 			Target:     target,
@@ -257,8 +266,8 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 			return "", fmt.Errorf("act upon with on event for player '%s': %w", p.name, err)
 		}
 
-		if response != "" {
-			return response, nil
+		if match {
+			return "", nil
 		}
 	}
 	return noMatchResponse, nil

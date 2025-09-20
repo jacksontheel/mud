@@ -3,10 +3,11 @@ package entities
 type ActionType int
 
 const (
-	ActionSay ActionType = iota
+	ActionPrint ActionType = iota
+	ActionPublish
 )
 
 type Action interface {
 	Id() ActionType
-	Execute(ev *Event) (string, bool)
+	Execute(ev *Event) error
 }

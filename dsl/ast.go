@@ -62,9 +62,15 @@ type Literal struct {
 }
 
 type ActionDef struct {
-	Say *SayAction `  @@`
+	Print   *PrintAction   `  "print" @@`
+	Publish *PublishAction `| "publish" @@`
 }
 
-type SayAction struct {
-	Value string `"say" @String`
+type PrintAction struct {
+	Target string `@Ident`
+	Value  string ` @String`
+}
+
+type PublishAction struct {
+	Value string ` @String`
 }
