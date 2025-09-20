@@ -69,6 +69,9 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 		return message, err
 	case parser.CommandSay:
 		return player.Say(cmd.Params["message"]), nil
+	case parser.CommandWhisper:
+		message, err := player.Whisper(cmd.Params["target"], cmd.Params["message"])
+		return message, err
 	default:
 		return "I don't understand that.", nil
 	}

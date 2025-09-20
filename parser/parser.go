@@ -14,6 +14,7 @@ const (
 	CommandKiss      = "kiss"
 	CommandInventory = "inventory"
 	CommandSay       = "say"
+	CommandWhisper   = "whisper"
 )
 
 type Command struct {
@@ -68,6 +69,8 @@ var verbAliases = map[string]string{
 	"i": CommandInventory,
 
 	"say": CommandSay,
+
+	"whisper": CommandWhisper,
 }
 
 var multiWordVerbMerges = [][]string{
@@ -141,6 +144,12 @@ var patterns = []pattern{
 
 	{kind: CommandSay, tokens: []patToken{
 		lit(CommandSay),
+		slotRest("message", "message"),
+	}},
+
+	{kind: CommandWhisper, tokens: []patToken{
+		lit(CommandWhisper),
+		slot("target", "target"),
 		slotRest("message", "message"),
 	}},
 }
