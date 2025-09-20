@@ -208,7 +208,7 @@ func processThen(def *RuleDef) ([]entities.Action, error) {
 
 			newAction = &actions.Print{
 				Text:   aDef.Print.Value,
-				Target: actions.StringToPrintTarget(aDef.Print.Target), // error out
+				Target: actions.StringToPrintTarget(aDef.Print.Target),
 			}
 		} else if aDef.Publish != nil {
 			newAction = &actions.Publish{
