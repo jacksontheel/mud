@@ -1,7 +1,7 @@
 package components
 
 import (
-	"strings"
+	"fmt"
 
 	"example.com/mud/world/entities"
 )
@@ -22,28 +22,24 @@ func (e *Eventful) Copy() entities.Component {
 	}
 }
 
-func (c *Eventful) OnEvent(ev *entities.Event) (string, error) {
+func (c *Eventful) OnEvent(ev *entities.Event) (bool, error) {
 	for _, r := range c.Rules {
 		match, err := matchWhen(r.When, ev)
 		if err != nil {
-			return "", err
+			return false, err
 		}
 
 		if match {
-			var b strings.Builder
 			for _, a := range r.Then {
-				if resp, ok := a.Execute(ev); ok && resp != "" {
-					if b.Len() > 0 {
-						b.WriteByte('\n')
-					}
-					b.WriteString(resp)
+				if err := a.Execute(ev); err != nil {
+					return false, fmt.Errorf("error executing action: %w", err)
 				}
 			}
 			// only match on first match, return after
-			return b.String(), nil
+			return true, nil
 		}
 	}
-	return "", nil
+	return false, nil
 }
 
 func (c *Eventful) AddRule(rule *entities.Rule) {

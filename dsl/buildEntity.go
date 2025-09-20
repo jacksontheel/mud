@@ -149,7 +149,7 @@ func processRule(def *RuleDef) (*entities.Rule, error) {
 
 	then, err := processThen(def)
 	if err != nil {
-		return nil, fmt.Errorf("could not process 'then' for reaction on %s", def.Command)
+		return nil, fmt.Errorf("could not process 'then' for reaction on %s: %w", def.Command, err)
 	}
 
 	return &entities.Rule{
@@ -200,9 +200,15 @@ func processThen(def *RuleDef) ([]entities.Action, error) {
 	for i, aDef := range def.Actions {
 		var newAction entities.Action
 
-		if aDef.Say != nil {
-			newAction = &actions.Say{
-				Text: aDef.Say.Value,
+		printTarget := actions.StringToPrintTarget(aDef.Print.Target)
+		if printTarget == actions.PrintTargetUnknown {
+			return nil, fmt.Errorf("unknown print target %s", aDef.Print.Target)
+		}
+
+		if aDef.Print != nil {
+			newAction = &actions.Print{
+				Text:   aDef.Print.Value,
+				Target: actions.StringToPrintTarget(aDef.Print.Target), // error out
 			}
 		}
 
