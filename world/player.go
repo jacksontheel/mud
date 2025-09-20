@@ -139,7 +139,7 @@ func (p *Player) Inventory() (string, error) {
 }
 
 func (p *Player) Say(message string) string {
-	p.world.Publish(p, fmt.Sprintf("%s says, \"%s\"", p.name, message)) // Why can publish take p as the room
+	p.world.Publish(p, fmt.Sprintf("%s says, \"%s\"", p.name, message))
 
 	return fmt.Sprintf("You say: \"%s\"", message)
 }
