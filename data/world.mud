@@ -33,8 +33,18 @@ entity Couch {
     }
 
     when attack {
-        print source "The springs of the couch groan as you beat upon them."
-        publish "{source} beats upon the couch, its old springs groaning."
+        print source "As you beat upon the couch, a nickel falls out."
+        publish "{source} beats upon the couch, and a shining nickel falls out from under a cushion."
+        copy "Nickel" to source Inventory
+    }
+}
+
+entity Nickel {
+    has Identity {
+        name is "Nickel"
+        description is "Alexander Hamilton smiles at you from his silver gleaming side profile."
+        aliases is ["nickel"]
+        tags is ["item"]
     }
 }
 

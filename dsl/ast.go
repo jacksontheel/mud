@@ -64,6 +64,7 @@ type Literal struct {
 type ActionDef struct {
 	Print   *PrintAction   `  "print" @@`
 	Publish *PublishAction `| "publish" @@`
+	Copy    *CopyAction    `| "copy" @@`
 }
 
 type PrintAction struct {
@@ -73,4 +74,10 @@ type PrintAction struct {
 
 type PublishAction struct {
 	Value string ` @String`
+}
+
+type CopyAction struct {
+	EntityId  string ` @String`
+	Target    string ` "to" @Ident `
+	Component string ` @Ident`
 }

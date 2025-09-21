@@ -18,6 +18,21 @@ const (
 	ComponentInventoryString = "Inventory"
 )
 
+func StringToComponentType(s string) ComponentType {
+	switch s {
+	case ComponentRoomString:
+		return ComponentRoom
+	case ComponentIdentityString:
+		return ComponentIdentity
+	case ComponentEventfulString:
+		return ComponentEventful
+	case ComponentInventoryString:
+		return ComponentInventory
+	default:
+		return ComponentUnknown
+	}
+}
+
 func (ct ComponentType) String() string {
 	switch ct {
 	case ComponentRoom:

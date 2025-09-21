@@ -30,6 +30,32 @@ func (e *Entity) Add(c Component) *Entity {
 	return e
 }
 
+func (e *Entity) GetComponentWithChildren(ct ComponentType) (ComponentWithChildren, bool) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	for _, c := range e.components {
+		id := c.Id()
+		if cwc, ok := any(c).(ComponentWithChildren); ok {
+			if id == ct {
+				return cwc, true
+			}
+		}
+	}
+
+	return nil, false
+}
+
+func (e *Entity) RequireComponentWithChildren(ct ComponentType) (ComponentWithChildren, error) {
+	c, ok := e.GetComponentWithChildren(ct)
+
+	if !ok {
+		return nil, fmt.Errorf("entity does not have component with children %s", ct.String())
+	}
+
+	return c, nil
+}
+
 func GetComponent[C Component](e *Entity) (C, bool) {
 	var zero C
 	e.mu.RLock()

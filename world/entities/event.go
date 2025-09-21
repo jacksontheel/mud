@@ -8,12 +8,13 @@ type Publisher interface {
 }
 
 type Event struct {
-	Type       string
-	Publisher  Publisher
-	Room       *Entity
-	Source     *Entity
-	Instrument *Entity
-	Target     *Entity
+	Type         string
+	Publisher    Publisher
+	EntitiesById map[string]*Entity
+	Room         *Entity
+	Source       *Entity
+	Instrument   *Entity
+	Target       *Entity
 }
 
 type EntitySelector struct {

@@ -36,6 +36,8 @@ func (w *World) AddPlayer(name string, inbox chan string) *Player {
 
 func (w *World) Bus() *Bus { return w.bus }
 
+func (w *World) EntitiesById() map[string]*entities.Entity { return w.entityMap }
+
 func (w *World) DisconnectPlayer(p *Player) {
 	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
 		room.GetChildren().RemoveChild(p.entity)
