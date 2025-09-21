@@ -41,12 +41,12 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 				},
 				Then: []entities.Action{
 					&actions.Print{
-						Target: actions.PrintTargetSource,
-						Text:   "You beat a great big indent into {target}'s head",
+						EventRole: actions.EventRoleSource,
+						Text:      "You beat a great big indent into {target}'s head",
 					},
 					&actions.Print{
-						Target: actions.PrintTargetTarget,
-						Text:   "{source} caves your head in.",
+						EventRole: actions.EventRoleTarget,
+						Text:      "{source} caves your head in.",
 					},
 				},
 			},
@@ -214,11 +214,12 @@ func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) 
 	if target != nil {
 		if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
 			match, err := eventful.OnEvent(&entities.Event{
-				Type:      action,
-				Publisher: p.world.bus,
-				Room:      p.currentRoom,
-				Source:    p.entity,
-				Target:    target,
+				Type:         action,
+				Publisher:    p.world.Bus(),
+				EntitiesById: p.world.EntitiesById(),
+				Room:         p.currentRoom,
+				Source:       p.entity,
+				Target:       target,
 			})
 
 			if err != nil {

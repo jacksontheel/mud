@@ -8,51 +8,9 @@ import (
 	"example.com/mud/world/entities/components"
 )
 
-type PrintTarget int
-
-const (
-	PrintTargetUnknown PrintTarget = iota
-	PrintTargetSource
-	PrintTargetInstrument
-	PrintTargetTarget
-)
-
-const (
-	PrintTargetUnknownString    = "unknown"
-	PrintTargetSourceString     = "source"
-	PrintTargetInstrumentString = "instrument"
-	PrintTargetTargetString     = "target"
-)
-
-func StringToPrintTarget(s string) PrintTarget {
-	switch s {
-	case PrintTargetSourceString:
-		return PrintTargetSource
-	case PrintTargetInstrumentString:
-		return PrintTargetInstrument
-	case PrintTargetTargetString:
-		return PrintTargetTarget
-	default:
-		return PrintTargetUnknown
-	}
-}
-
-func (pt PrintTarget) String() string {
-	switch pt {
-	case PrintTargetSource:
-		return PrintTargetSourceString
-	case PrintTargetInstrument:
-		return PrintTargetSourceString
-	case PrintTargetTarget:
-		return PrintTargetTargetString
-	default:
-		return PrintTargetUnknownString
-	}
-}
-
 type Print struct {
-	Text   string
-	Target PrintTarget
+	Text      string
+	EventRole EventRole
 }
 
 var _ entities.Action = &Print{}
@@ -67,15 +25,15 @@ func (p *Print) Execute(ev *entities.Event) error {
 	}
 
 	var recipient *entities.Entity
-	switch p.Target {
-	case PrintTargetSource:
+	switch p.EventRole {
+	case EventRoleSource:
 		recipient = ev.Source
-	case PrintTargetInstrument:
+	case EventRoleInstrument:
 		recipient = ev.Instrument
-	case PrintTargetTarget:
+	case EventRoleTarget:
 		recipient = ev.Target
 	default:
-		return fmt.Errorf("invalid target '%s' for print action", p.Target.String())
+		return fmt.Errorf("invalid role '%s' for print action", p.EventRole.String())
 	}
 
 	message, err := formatText(p.Text, ev)

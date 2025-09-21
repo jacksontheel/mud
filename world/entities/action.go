@@ -5,6 +5,7 @@ type ActionType int
 const (
 	ActionPrint ActionType = iota
 	ActionPublish
+	ActionCopy
 )
 
 type Action interface {

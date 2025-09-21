@@ -18,7 +18,7 @@ func (p *Publish) Id() entities.ActionType {
 
 func (p *Publish) Execute(ev *entities.Event) error {
 	if ev.Publisher == nil {
-		return fmt.Errorf("publisher in event may not be nil for print action")
+		return fmt.Errorf("publisher in event may not be nil for publish action")
 	}
 
 	message, err := formatText(p.Text, ev)

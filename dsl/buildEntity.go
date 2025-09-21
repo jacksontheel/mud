@@ -201,18 +201,34 @@ func processThen(def *RuleDef) ([]entities.Action, error) {
 		var newAction entities.Action
 
 		if aDef.Print != nil {
-			printTarget := actions.StringToPrintTarget(aDef.Print.Target)
-			if printTarget == actions.PrintTargetUnknown {
+			printTarget := actions.StringToEventRole(aDef.Print.Target)
+			if printTarget == actions.EventRoleUnknown {
 				return nil, fmt.Errorf("unknown print target %s", aDef.Print.Target)
 			}
 
 			newAction = &actions.Print{
-				Text:   aDef.Print.Value,
-				Target: actions.StringToPrintTarget(aDef.Print.Target),
+				Text:      aDef.Print.Value,
+				EventRole: actions.StringToEventRole(aDef.Print.Target),
 			}
 		} else if aDef.Publish != nil {
 			newAction = &actions.Publish{
 				Text: aDef.Publish.Value,
+			}
+		} else if aDef.Copy != nil {
+			copyTarget := actions.StringToEventRole(aDef.Copy.Target)
+			if copyTarget == actions.EventRoleUnknown {
+				return nil, fmt.Errorf("unknown copy target %s", aDef.Copy.Target)
+			}
+
+			component := entities.StringToComponentType(aDef.Copy.Component)
+			if component == entities.ComponentUnknown {
+				return nil, fmt.Errorf("unknown component type %s", aDef.Copy.Component)
+			}
+
+			newAction = &actions.Copy{
+				EntityId:      aDef.Copy.EntityId,
+				EventRole:     actions.StringToEventRole(aDef.Copy.Target),
+				ComponentType: component,
 			}
 		}
 

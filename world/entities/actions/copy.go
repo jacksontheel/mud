@@ -1,0 +1,46 @@
+package actions
+
+import (
+	"fmt"
+
+	"example.com/mud/world/entities"
+)
+
+type Copy struct {
+	EntityId      string
+	EventRole     EventRole
+	ComponentType entities.ComponentType
+}
+
+var _ entities.Action = &Copy{}
+
+func (c *Copy) Id() entities.ActionType {
+	return entities.ActionCopy
+}
+
+func (c *Copy) Execute(ev *entities.Event) error {
+	if ev.EntitiesById == nil {
+		return fmt.Errorf("entities by id map in event may not be nil for copy action")
+	}
+
+	var recipient *entities.Entity
+	switch c.EventRole {
+	case EventRoleSource:
+		recipient = ev.Source
+	case EventRoleInstrument:
+		recipient = ev.Instrument
+	case EventRoleTarget:
+		recipient = ev.Target
+	default:
+		return fmt.Errorf("invalid role '%s' for copy action", c.EventRole.String())
+	}
+
+	component, err := recipient.RequireComponentWithChildren(c.ComponentType)
+
+	if err != nil {
+		return fmt.Errorf("error executing copy action: %w", err)
+	}
+
+	component.GetChildren().AddChild(ev.EntitiesById[c.EntityId].Copy())
+	return nil
+}
