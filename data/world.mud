@@ -101,7 +101,8 @@ entity Bathroom {
 
     has Room {
         exits is {
-            "west": "LivingRoom"
+            "west": "LivingRoom",
+            "east": "MedicineCabinet"
         }
 
         children is [
