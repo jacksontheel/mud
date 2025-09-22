@@ -136,7 +136,7 @@ entity Goblin {
     when kiss by #player {
         print source "You give the goblin a kiss upon his sweaty brow, and he hops into your pocket."
         publish "{source} gives the goblin a kiss, before the goblin jumps into {source}'s pocket."
-        move instrument to source Inventory
+        move source to source Inventory
     }
 }
 
