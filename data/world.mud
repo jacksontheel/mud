@@ -33,8 +33,8 @@ entity Couch {
     }
 
     when attack {
-        print source "As you beat upon the couch, a dime falls out."
-        publish "{source} beats upon the couch, and a shining dime falls out from under a cushion."
+        print source "As you beat upon the couch, a nickel falls out."
+        publish "{source} beats upon the couch, and a shining nickel falls out from under a cushion."
         copy "Nickel" to room Room
     }
 }
