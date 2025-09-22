@@ -31,16 +31,20 @@ func (c *Copy) Execute(ev *entities.Event) error {
 		recipient = ev.Instrument
 	case EventRoleTarget:
 		recipient = ev.Target
+	case EventRoleRoom:
+		recipient = ev.Room
 	default:
 		return fmt.Errorf("invalid role '%s' for copy action", c.EventRole.String())
 	}
 
 	component, err := recipient.RequireComponentWithChildren(c.ComponentType)
-
 	if err != nil {
 		return fmt.Errorf("error executing copy action: %w", err)
 	}
 
-	component.GetChildren().AddChild(ev.EntitiesById[c.EntityId].Copy())
+	component.GetChildren().AddChild(
+		ev.EntitiesById[c.EntityId].Copy(component),
+	)
+
 	return nil
 }

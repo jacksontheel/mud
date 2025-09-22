@@ -17,7 +17,7 @@ type Player struct {
 }
 
 func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player {
-	playerEntity := entities.NewEntity()
+	playerEntity := entities.NewEntity(nil)
 	playerEntity.Add(&components.Identity{
 		Name:        name,
 		Description: fmt.Sprintf("%s the brave hero is here.", name),
@@ -26,7 +26,7 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 	})
 
 	inventory := components.NewInventory()
-	inventory.GetChildren().AddChild(getEgg())
+	inventory.GetChildren().AddChild(createEgg(inventory))
 	playerEntity.Add(inventory)
 
 	playerEntity.Add(&components.Eventful{
@@ -62,8 +62,8 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 }
 
 // temporary function to test inventory
-func getEgg() *entities.Entity {
-	egg := entities.NewEntity()
+func createEgg(parent entities.ComponentWithChildren) *entities.Entity {
+	egg := entities.NewEntity(parent)
 	egg.Add(&components.Identity{
 		Name:        "Egg",
 		Description: "A bulbous, green-speckled egg.",

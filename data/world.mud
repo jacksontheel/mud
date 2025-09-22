@@ -35,19 +35,18 @@ entity Couch {
     when attack {
         print source "As you beat upon the couch, a nickel falls out."
         publish "{source} beats upon the couch, and a shining nickel falls out from under a cushion."
-        copy "Nickel" to source Inventory
+        copy "Nickel" to room Room
     }
 }
 
 entity Nickel {
     has Identity {
         name is "Nickel"
-        description is "Alexander Hamilton smiles at you from his silver gleaming side profile."
+        description is "A shining nickel, Thomas Jefferson smiles at you from his handsome side profile."
         aliases is ["nickel"]
         tags is ["item"]
     }
 }
-
 
 entity Lamp {
     has Identity {
@@ -106,7 +105,8 @@ entity Bathroom {
         }
 
         children is [
-            "Toilet"
+            "Toilet",
+            "Goblin"
         ]
     }
 }
@@ -119,3 +119,24 @@ entity Toilet {
         tags is ["furniture"]
     }   
 }
+
+entity Goblin {
+   has Identity {
+        name is "Goblin"
+        description is "A funny goblin man no bigger than your fist smiles warmly."
+        aliases is ["goblin", "man"]
+        tags is ["npc"]
+    } 
+
+    when attack by #player {
+        print source "You pummel the goblin as he whines helplessly"
+        publish "{source} punches and kicks the helpless goblin in his head."
+    }
+
+    when kiss by #player {
+        print source "You give the goblin a kiss upon his sweaty brow, and he hops into your pocket."
+        publish "{source} gives the goblin a kiss, before the goblin jumps into {source}'s pocket."
+        move source to source Inventory
+    }
+}
+
