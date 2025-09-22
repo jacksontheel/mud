@@ -7,6 +7,7 @@ const (
 	EventRoleSource
 	EventRoleInstrument
 	EventRoleTarget
+	EventRoleRoom
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 	EventRoleSourceString     = "source"
 	EventRoleInstrumentString = "instrument"
 	EventRoleTargetString     = "target"
+	EventRoleRoomString       = "room"
 )
 
 func StringToEventRole(s string) EventRole {
@@ -24,6 +26,8 @@ func StringToEventRole(s string) EventRole {
 		return EventRoleInstrument
 	case EventRoleTargetString:
 		return EventRoleTarget
+	case EventRoleRoomString:
+		return EventRoleRoom
 	default:
 		return EventRoleUnknown
 	}

@@ -54,7 +54,7 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 	// fully instantiate prototypes by filling in their children
 	out := make(map[string]*entities.Entity, len(built))
 	for name := range built {
-		inst, err := instantiate(name, built, pending, map[string]bool{})
+		inst, err := instantiate(name, built, nil, pending, map[string]bool{})
 		if err != nil {
 			return nil, fmt.Errorf("instantiate %s: %w", name, err)
 		}
@@ -65,7 +65,7 @@ func buildAll(ast *DSL) (map[string]*entities.Entity, error) {
 
 // create prototype entity with components. collect child prototype names into the sidecar for later.
 func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntity, error) {
-	e := entities.NewEntity()
+	e := entities.NewEntity(nil)
 
 	for _, block := range def.Blocks {
 		// process rules
@@ -111,7 +111,7 @@ func buildPrototype(name string, def *EntityDef, pending childRefs) (*builtEntit
 }
 
 // recursively instantiate a named prototype and wire up children for all child-holding components.
-func instantiate(name string, protos map[string]*builtEntity, pending childRefs, visiting map[string]bool) (*entities.Entity, error) {
+func instantiate(name string, protos map[string]*builtEntity, parent entities.ComponentWithChildren, pending childRefs, visiting map[string]bool) (*entities.Entity, error) {
 	be, ok := protos[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown prototype %q", name)
@@ -122,14 +122,14 @@ func instantiate(name string, protos map[string]*builtEntity, pending childRefs,
 	visiting[name] = true
 	defer func() { visiting[name] = false }()
 
-	inst := be.ent.Copy()
+	inst := be.ent.Copy(parent)
 
 	// for each child-capable component on the entity, look up its pending child names from the prototype’s sidecar and attach recursively.
 	if rm, ok := entities.GetComponent[*components.Room](inst); ok {
 		slot := pending[name]["Room"]
 		if len(slot) > 0 {
 			for _, childName := range slot {
-				childInst, err := instantiate(childName, protos, pending, visiting)
+				childInst, err := instantiate(childName, protos, rm, pending, visiting)
 				if err != nil {
 					return nil, err
 				}
@@ -222,13 +222,34 @@ func processThen(def *RuleDef) ([]entities.Action, error) {
 
 			component := entities.StringToComponentType(aDef.Copy.Component)
 			if component == entities.ComponentUnknown {
-				return nil, fmt.Errorf("unknown component type %s", aDef.Copy.Component)
+				return nil, fmt.Errorf("unknown copy component type %s", aDef.Copy.Component)
 			}
 
 			newAction = &actions.Copy{
 				EntityId:      aDef.Copy.EntityId,
 				EventRole:     actions.StringToEventRole(aDef.Copy.Target),
 				ComponentType: component,
+			}
+		} else if aDef.Move != nil {
+			roleOrigin := actions.StringToEventRole(aDef.Move.RoleOrigin)
+			if roleOrigin == actions.EventRoleUnknown {
+				return nil, fmt.Errorf("unknown move origin role %s", aDef.Copy.Target)
+			}
+
+			roleDestination := actions.StringToEventRole(aDef.Move.RoleDestination)
+			if roleDestination == actions.EventRoleUnknown {
+				return nil, fmt.Errorf("unknown move destination role %s", aDef.Copy.Target)
+			}
+
+			component := entities.StringToComponentType(aDef.Move.Component)
+			if component == entities.ComponentUnknown {
+				return nil, fmt.Errorf("unknown move component type %s", aDef.Copy.Component)
+			}
+
+			newAction = &actions.Move{
+				RoleOrigin:      roleOrigin,
+				RoleDestination: roleDestination,
+				ComponentType:   component,
 			}
 		}
 

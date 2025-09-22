@@ -65,6 +65,7 @@ type ActionDef struct {
 	Print   *PrintAction   `  "print" @@`
 	Publish *PublishAction `| "publish" @@`
 	Copy    *CopyAction    `| "copy" @@`
+	Move    *MoveAction    `| "move" @@`
 }
 
 type PrintAction struct {
@@ -80,4 +81,10 @@ type CopyAction struct {
 	EntityId  string ` @String`
 	Target    string ` "to" @Ident `
 	Component string ` @Ident`
+}
+
+type MoveAction struct {
+	RoleOrigin      string ` @Ident`
+	RoleDestination string ` "to" @Ident `
+	Component       string ` @Ident`
 }

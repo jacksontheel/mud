@@ -6,6 +6,7 @@ const (
 	ActionPrint ActionType = iota
 	ActionPublish
 	ActionCopy
+	ActionMove
 )
 
 type Action interface {
