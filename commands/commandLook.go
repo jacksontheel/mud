@@ -1,8 +1,14 @@
 package commands
 
-var lookPatterns = []Pattern{
-	{Kind: "look", Tokens: []PatToken{Lit("look")}},
-	{Kind: "look", Tokens: []PatToken{Lit("look"), Slot("target", "target")}},
+import "example.com/mud/models"
+
+var lookPatterns = []models.Pattern{
+	{Kind: "look", Tokens: []models.PatToken{
+		models.Lit("look")}},
+
+	{Kind: "look", Tokens: []models.PatToken{
+		models.Lit("look"),
+		models.Slot("target", "target")}},
 }
 
 var lookAliases = map[string]string{

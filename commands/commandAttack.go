@@ -1,8 +1,17 @@
 package commands
 
-var attackPatterns = []Pattern{
-	{Kind: "attack", Tokens: []PatToken{Lit("attack"), Slot("target", "target"), Lit("with"), Slot("instrument", "instrument")}},
-	{Kind: "attack", Tokens: []PatToken{Lit("attack"), SlotRest("target", "target")}},
+import "example.com/mud/models"
+
+var attackPatterns = []models.Pattern{
+	{Kind: "attack", Tokens: []models.PatToken{
+		models.Lit("attack"),
+		models.Slot("target", "target"),
+		models.Lit("with"),
+		models.Slot("instrument", "instrument")}},
+
+	{Kind: "attack", Tokens: []models.PatToken{
+		models.Lit("attack"),
+		models.SlotRest("target", "target")}},
 }
 
 var attackAliases = map[string]string{

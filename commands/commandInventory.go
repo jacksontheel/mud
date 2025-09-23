@@ -1,7 +1,10 @@
 package commands
 
-var inventoryPatterns = []Pattern{
-	{Kind: "inventory", Tokens: []PatToken{Lit("inventory")}},
+import "example.com/mud/models"
+
+var inventoryPatterns = []models.Pattern{
+	{Kind: "inventory", Tokens: []models.PatToken{
+		models.Lit("inventory")}},
 }
 
 var inventoryAliases = map[string]string{

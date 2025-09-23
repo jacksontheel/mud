@@ -1,7 +1,11 @@
 package commands
 
-var kissPatterns = []Pattern{
-	{Kind: "kiss", Tokens: []PatToken{Lit("kiss"), SlotRest("target", "target")}},
+import "example.com/mud/models"
+
+var kissPatterns = []models.Pattern{
+	{Kind: "kiss", Tokens: []models.PatToken{
+		models.Lit("kiss"),
+		models.SlotRest("target", "target")}},
 }
 
 var kissAliases = map[string]string{

@@ -1,7 +1,11 @@
 package commands
 
-var takePatterns = []Pattern{
-	{Kind: "take", Tokens: []PatToken{Lit("take"), Slot("target", "target")}},
+import "example.com/mud/models"
+
+var takePatterns = []models.Pattern{
+	{Kind: "take", Tokens: []models.PatToken{
+		models.Lit("take"),
+		models.Slot("target", "target")}},
 }
 
 var takeAliases = map[string]string{

@@ -7,41 +7,13 @@ import (
 	"example.com/mud/models"
 )
 
-const (
-	CommandMove      = "move"
-	CommandTake      = "take"
-	CommandLook      = "look"
-	CommandAttack    = "attack"
-	CommandKiss      = "kiss"
-	CommandInventory = "inventory"
-	CommandSay       = "say"
-	CommandWhisper   = "whisper"
-)
-
-var directionAliases = map[string]string{
-	"n":     models.DirectionNorth,
-	"north": models.DirectionNorth,
-
-	"s":     models.DirectionSouth,
-	"south": models.DirectionSouth,
-
-	"e":    models.DirectionEast,
-	"east": models.DirectionEast,
-
-	"w":    models.DirectionWest,
-	"west": models.DirectionWest,
-
-	"u":  models.DirectionUp,
-	"up": models.DirectionUp,
-
-	"d":    models.DirectionDown,
-	"down": models.DirectionDown,
-}
-
+// TODO: register multi-word merges at the command level instead of in parser
 var multiWordVerbMerges = [][]string{
 	{"pick", "up"},
 	{"make", "out"},
 }
+
+var directionAliases = commands.DirectionAliases()
 
 var verbAliases = commands.AllAliases()
 
@@ -106,7 +78,7 @@ func mergeSequences(tokens []string, merges [][]string) []string {
 	return out
 }
 
-func tryMatch(p commands.Pattern, tokens []string) (ok bool, params map[string]string) {
+func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]string) {
 	params = map[string]string{}
 	ti := 0
 	for pi := 0; pi < len(p.Tokens); pi++ {

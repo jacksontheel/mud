@@ -3,10 +3,23 @@ package commands
 import (
 	"fmt"
 	"log"
+
+	"example.com/mud/models"
 )
 
-func AllPatterns() []Pattern {
-	var all []Pattern
+const (
+	CommandMove      = "move"
+	CommandTake      = "take"
+	CommandLook      = "look"
+	CommandAttack    = "attack"
+	CommandKiss      = "kiss"
+	CommandInventory = "inventory"
+	CommandSay       = "say"
+	CommandWhisper   = "whisper"
+)
+
+func AllPatterns() []models.Pattern {
+	var all []models.Pattern
 
 	all = append(all, movePatterns...)
 	all = append(all, takePatterns...)
@@ -38,6 +51,10 @@ func AllAliases() map[string]string {
 	}
 
 	return merged
+}
+
+func DirectionAliases() map[string]string {
+	return moveDirectionAliases
 }
 
 func MergeAliasMaps(aliasMaps ...map[string]string) (map[string]string, error) {
