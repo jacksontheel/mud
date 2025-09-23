@@ -1,13 +1,13 @@
-package commands
+package cmd
 
 import "example.com/mud/models"
 
-var inventoryPatterns = []models.Pattern{
+var InventoryPatterns = []models.Pattern{
 	{Kind: "inventory", Tokens: []models.PatToken{
 		models.Lit("inventory")}},
 }
 
-var inventoryAliases = map[string]string{
+var InventoryAliases = map[string]string{
 	"inventory": "inventory",
 	"i":         "inventory",
 }

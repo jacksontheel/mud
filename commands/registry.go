@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"example.com/mud/commands/cmd"
 	"example.com/mud/models"
 )
 
@@ -21,14 +22,14 @@ const (
 func AllPatterns() []models.Pattern {
 	var all []models.Pattern
 
-	all = append(all, movePatterns...)
-	all = append(all, takePatterns...)
-	all = append(all, lookPatterns...)
-	all = append(all, attackPatterns...)
-	all = append(all, kissPatterns...)
-	all = append(all, inventoryPatterns...)
-	all = append(all, sayPatterns...)
-	all = append(all, whisperPatterns...)
+	all = append(all, cmd.MovePatterns...)
+	all = append(all, cmd.TakePatterns...)
+	all = append(all, cmd.LookPatterns...)
+	all = append(all, cmd.AttackPatterns...)
+	all = append(all, cmd.KissPatterns...)
+	all = append(all, cmd.InventoryPatterns...)
+	all = append(all, cmd.SayPatterns...)
+	all = append(all, cmd.WhisperPatterns...)
 
 	return all
 }
@@ -36,14 +37,14 @@ func AllPatterns() []models.Pattern {
 func AllAliases() map[string]string {
 
 	var merged, err = MergeAliasMaps(
-		moveAliases,
-		takeAliases,
-		lookAliases,
-		attackAliases,
-		kissAliases,
-		inventoryAliases,
-		sayAliases,
-		whisperAliases,
+		cmd.MoveAliases,
+		cmd.TakeAliases,
+		cmd.LookAliases,
+		cmd.AttackAliases,
+		cmd.KissAliases,
+		cmd.InventoryAliases,
+		cmd.SayAliases,
+		cmd.WhisperAliases,
 	)
 
 	if err != nil {
@@ -54,7 +55,7 @@ func AllAliases() map[string]string {
 }
 
 func DirectionAliases() map[string]string {
-	return moveDirectionAliases
+	return cmd.MoveDirectionAliases
 }
 
 func MergeAliasMaps(aliasMaps ...map[string]string) (map[string]string, error) {

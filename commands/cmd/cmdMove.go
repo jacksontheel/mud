@@ -1,8 +1,8 @@
-package commands
+package cmd
 
 import "example.com/mud/models"
 
-var movePatterns = []models.Pattern{
+var MovePatterns = []models.Pattern{
 	{Kind: "move", Tokens: []models.PatToken{
 		models.Slot("direction", "direction")}},
 
@@ -11,13 +11,13 @@ var movePatterns = []models.Pattern{
 		models.SlotRest("direction", "direction")}},
 }
 
-var moveAliases = map[string]string{
+var MoveAliases = map[string]string{
 	"move": "move",
 	"go":   "move",
 	"walk": "move",
 }
 
-var moveDirectionAliases = map[string]string{
+var MoveDirectionAliases = map[string]string{
 	"n":     models.DirectionNorth,
 	"north": models.DirectionNorth,
 
