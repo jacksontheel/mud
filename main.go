@@ -89,7 +89,7 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 }
 
 func main() {
-	entityMap, err := dsl.LoadEntitiesFromFile("data/")
+	entityMap, err := dsl.LoadEntitiesFromDirectory("data/")
 	if err != nil {
 		panic(err)
 	}

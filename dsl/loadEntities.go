@@ -11,7 +11,7 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 )
 
-func LoadEntitiesFromFile(directoryName string) (map[string]*entities.Entity, error) {
+func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entity, error) {
 	parser := participle.MustBuild[DSL](
 		participle.Lexer(dslLexer),
 		participle.Elide("Whitespace"),
