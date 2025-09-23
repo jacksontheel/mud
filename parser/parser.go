@@ -47,91 +47,6 @@ var verbAliases = commands.AllAliases()
 
 var patterns = commands.AllPatterns()
 
-// var verbAliases = map[string]string{
-// 	"go":   CommandMove,
-// 	"walk": CommandMove,
-// 	"move": CommandMove,
-
-// 	"take":    CommandTake,
-// 	"get":     CommandTake,
-// 	"grab":    CommandTake,
-// 	"pickup":  CommandTake,
-// 	"collect": CommandTake,
-
-// 	"look":    CommandLook,
-// 	"examine": CommandLook,
-// 	"inspect": CommandLook,
-// 	"l":       CommandLook,
-
-// 	"attack": CommandAttack,
-// 	"kill":   CommandAttack,
-// 	"hit":    CommandAttack,
-
-// 	"kiss":    CommandKiss,
-// 	"smooch":  CommandKiss,
-// 	"makeout": CommandKiss,
-
-// 	"i": CommandInventory,
-
-// 	"say": CommandSay,
-
-// 	"whisper": CommandWhisper,
-// }
-
-// var patterns = []pattern{
-// 	{kind: CommandMove, tokens: []patToken{
-// 		slot("direction", "direction"),
-// 	}},
-// 	{kind: CommandMove, tokens: []patToken{
-// 		lit(CommandMove),
-// 		slot("direction", "direction"),
-// 	}},
-
-// 	{kind: CommandTake, tokens: []patToken{
-// 		lit(CommandTake),
-// 		slotRest("target", "target"),
-// 	}},
-
-// 	{kind: CommandLook, tokens: []patToken{
-// 		lit(CommandLook),
-// 	}},
-// 	{kind: CommandLook, tokens: []patToken{
-// 		lit(CommandLook),
-// 		slotRest("target", "target"),
-// 	}},
-
-// 	{kind: CommandAttack, tokens: []patToken{
-// 		lit(CommandAttack),
-// 		slot("target", "target"),
-// 		lit("with"),
-// 		slot("instrument", "instrument"),
-// 	}},
-// 	{kind: CommandAttack, tokens: []patToken{
-// 		lit(CommandAttack),
-// 		slotRest("target", "target"),
-// 	}},
-
-// 	{kind: CommandKiss, tokens: []patToken{
-// 		lit(CommandKiss),
-// 		slotRest("target", "target"),
-// 	}},
-
-// 	{kind: CommandInventory, tokens: []patToken{
-// 		lit(CommandInventory),
-// 	}},
-
-// 	{kind: CommandSay, tokens: []patToken{
-// 		lit(CommandSay),
-// 		slotRest("message", "message"),
-// 	}},
-
-// 	{kind: CommandWhisper, tokens: []patToken{
-// 		lit(CommandWhisper),
-// 		slot("target", "target"),
-// 		slotRest("message", "message"),
-// 	}},
-// }
-
 func tokenize(input string) []string {
 	s := strings.ToLower(strings.TrimSpace(input))
 	parts := splitCompact(s)
@@ -145,7 +60,6 @@ func tokenize(input string) []string {
 			parts[0] = base
 		}
 	}
-
 	return parts
 }
 

@@ -11,6 +11,11 @@ func AllPatterns() []Pattern {
 	all = append(all, movePatterns...)
 	all = append(all, takePatterns...)
 	all = append(all, lookPatterns...)
+	all = append(all, attackPatterns...)
+	all = append(all, kissPatterns...)
+	all = append(all, inventoryPatterns...)
+	all = append(all, sayPatterns...)
+	all = append(all, whisperPatterns...)
 
 	return all
 }
@@ -21,6 +26,11 @@ func AllAliases() map[string]string {
 		moveAliases,
 		takeAliases,
 		lookAliases,
+		attackAliases,
+		kissAliases,
+		inventoryAliases,
+		sayAliases,
+		whisperAliases,
 	)
 
 	if err != nil {

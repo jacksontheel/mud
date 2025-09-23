@@ -6,7 +6,7 @@ var movePatterns = []Pattern{
 }
 
 var moveAliases = map[string]string{
+	"move": "move",
 	"go":   "move",
 	"walk": "move",
-	"move": "move",
 }
