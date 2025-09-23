@@ -6,17 +6,21 @@ import (
 )
 
 func AllPatterns() []Pattern {
-	return append(
-		MovePatterns,
-		TakePatterns...,
-	)
+	var all []Pattern
+
+	all = append(all, movePatterns...)
+	all = append(all, takePatterns...)
+	all = append(all, lookPatterns...)
+
+	return all
 }
 
 func AllAliases() map[string]string {
 
 	var merged, err = MergeAliasMaps(
-		MoveAliases,
-		TakeAliases,
+		moveAliases,
+		takeAliases,
+		lookAliases,
 	)
 
 	if err != nil {

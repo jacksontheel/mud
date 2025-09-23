@@ -1,9 +1,7 @@
 package commands
 
-type CommandKind string
-
 type Command struct {
-	Kind   CommandKind
+	Kind   string
 	Params map[string]string
 }
 

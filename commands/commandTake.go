@@ -1,10 +1,10 @@
 package commands
 
-var TakePatterns = []Pattern{
+var takePatterns = []Pattern{
 	{Kind: "take", Tokens: []PatToken{Lit("take"), Slot("target", "target")}},
 }
 
-var TakeAliases = map[string]string{
+var takeAliases = map[string]string{
 	"take":    "take",
 	"get":     "take",
 	"grab":    "take",

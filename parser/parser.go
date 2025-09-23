@@ -18,11 +18,6 @@ const (
 	CommandWhisper   = "whisper"
 )
 
-type Command struct {
-	Kind   string
-	Params map[string]string
-}
-
 var directionAliases = map[string]string{
 	"n":     models.DirectionNorth,
 	"north": models.DirectionNorth,
@@ -43,7 +38,14 @@ var directionAliases = map[string]string{
 	"down": models.DirectionDown,
 }
 
+var multiWordVerbMerges = [][]string{
+	{"pick", "up"},
+	{"make", "out"},
+}
+
 var verbAliases = commands.AllAliases()
+
+var patterns = commands.AllPatterns()
 
 // var verbAliases = map[string]string{
 // 	"go":   CommandMove,
@@ -75,13 +77,6 @@ var verbAliases = commands.AllAliases()
 
 // 	"whisper": CommandWhisper,
 // }
-
-var multiWordVerbMerges = [][]string{
-	{"pick", "up"},
-	{"make", "out"},
-}
-
-var patterns = commands.AllPatterns()
 
 // var patterns = []pattern{
 // 	{kind: CommandMove, tokens: []patToken{
@@ -270,17 +265,17 @@ func validateSlot(SlotType string, toks []string) (string, bool) {
 	}
 }
 
-func Parse(input string) Command {
+func Parse(input string) commands.Command {
 	toks := tokenize(input)
 	if len(toks) == 0 {
-		return Command{Kind: "", Params: nil}
+		return commands.Command{Kind: "", Params: nil}
 	}
 
 	for _, p := range patterns {
 		if ok, params := tryMatch(p, toks); ok {
-			return Command{Kind: p.Kind, Params: params}
+			return commands.Command{Kind: p.Kind, Params: params}
 		}
 	}
 
-	return Command{Kind: "", Params: nil}
+	return commands.Command{Kind: "", Params: nil}
 }
