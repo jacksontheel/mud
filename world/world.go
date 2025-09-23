@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"example.com/mud/commands"
 	"example.com/mud/parser"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
@@ -51,27 +52,28 @@ func (w *World) Publish(player *Player, message string) {
 	w.bus.Publish(player.currentRoom, message, []*entities.Entity{player.entity})
 }
 
+// TODO: move command behavior to the command file? Currently being handled between player.go and world.go
 func (w *World) Parse(player *Player, line string) (string, error) {
 	cmd := parser.Parse(line)
 	switch cmd.Kind {
-	case parser.CommandMove:
+	case commands.CommandMove:
 		message, err := player.Move(cmd.Params["direction"])
 		return message, err
-	case parser.CommandLook:
+	case commands.CommandLook:
 		message, err := player.Look(cmd.Params["target"])
 		return message, err
-	case parser.CommandInventory:
+	case commands.CommandInventory:
 		message, err := player.Inventory()
 		return message, err
-	case parser.CommandAttack:
+	case commands.CommandAttack:
 		message, err := player.Attack(cmd.Params["target"], cmd.Params["instrument"])
 		return message, err
-	case parser.CommandKiss:
+	case commands.CommandKiss:
 		message, err := player.Kiss(cmd.Params["target"])
 		return message, err
-	case parser.CommandSay:
+	case commands.CommandSay:
 		return player.Say(cmd.Params["message"]), nil
-	case parser.CommandWhisper:
+	case commands.CommandWhisper:
 		message, err := player.Whisper(cmd.Params["target"], cmd.Params["message"])
 		return message, err
 	default:
