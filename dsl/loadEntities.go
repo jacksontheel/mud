@@ -44,10 +44,10 @@ func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entit
 		}
 
 		// append parsed dsl to the ast
-		ast.Entities = append(ast.Entities, fileSyntaxTree.Entities...)
+		ast.Declarations = append(ast.Declarations, fileSyntaxTree.Declarations...)
 		return nil
 	})
 
-	entities, err := buildAll(ast)
+	entities, err := Compile(ast)
 	return entities, err
 }

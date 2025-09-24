@@ -1,5 +1,7 @@
 package entities
 
+import "fmt"
+
 type ComponentType int
 
 const (
@@ -18,18 +20,18 @@ const (
 	ComponentInventoryString = "Inventory"
 )
 
-func StringToComponentType(s string) ComponentType {
+func ParseComponentType(s string) (ComponentType, error) {
 	switch s {
 	case ComponentRoomString:
-		return ComponentRoom
+		return ComponentRoom, nil
 	case ComponentIdentityString:
-		return ComponentIdentity
+		return ComponentIdentity, nil
 	case ComponentEventfulString:
-		return ComponentEventful
+		return ComponentEventful, nil
 	case ComponentInventoryString:
-		return ComponentInventory
+		return ComponentInventory, nil
 	default:
-		return ComponentUnknown
+		return ComponentUnknown, fmt.Errorf("unknown component type '%s'", s)
 	}
 }
 
