@@ -15,16 +15,16 @@ func registerComponentBuilder(name string, b componentBuilder) {
 	componentBuilders[name] = b
 }
 
-func processComponentNoChildren(def *ComponentDef) (entities.Component, error) {
+func init() {
+	registerComponentBuilder("Identity", buildIdentity)
+	registerComponentBuilder("Room", buildRoom)
+}
+
+func processComponentPrototype(def *ComponentDef) (entities.Component, error) {
 	if b, ok := componentBuilders[def.Name]; ok {
 		return b(def)
 	}
 	return nil, fmt.Errorf("could not match component name %s", def.Name)
-}
-
-func init() {
-	registerComponentBuilder("Identity", buildIdentity)
-	registerComponentBuilder("Room", buildRoom)
 }
 
 func buildIdentity(def *ComponentDef) (entities.Component, error) {
@@ -42,11 +42,11 @@ func buildIdentity(def *ComponentDef) (entities.Component, error) {
 			}
 			id.Description = *f.Value.String
 		case "aliases":
-			id.Aliases = f.Value.asStrings()
+			id.Aliases = f.Value.Strings
 		case "tags":
-			id.Tags = f.Value.asStrings()
+			id.Tags = f.Value.Strings
 		default:
-			return nil, fmt.Errorf("identity: unknown field %q", f.Key)
+			return nil, fmt.Errorf("identity: unknown field %s", f.Key)
 		}
 	}
 	return id, nil
@@ -65,7 +65,7 @@ func buildRoom(def *ComponentDef) (entities.Component, error) {
 		case "children":
 			continue
 		default:
-			return nil, fmt.Errorf("room: unknown field %q", f.Key)
+			return nil, fmt.Errorf("room: unknown field %s", f.Key)
 		}
 	}
 	return rm, nil

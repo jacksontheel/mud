@@ -19,22 +19,37 @@ var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
 })
 
 type DSL struct {
-	Entities []*EntityDef `@@*`
+	Declarations []*TopLevel `@@*`
+}
+
+type TopLevel struct {
+	Entity *EntityDef `"entity" @@`
+	Trait  *TraitDef  `| "trait" @@`
 }
 
 type EntityDef struct {
-	Name   string         `"entity" @Ident`
+	Name   string         `@Ident`
+	Blocks []*EntityBlock `"{" { @@ } "}"`
+}
+
+type TraitDef struct {
+	Name   string         `@Ident`
 	Blocks []*EntityBlock `"{" { @@ } "}"`
 }
 
 type EntityBlock struct {
-	Component *ComponentDef `  "has" @@ `
-	Rule      *RuleDef      `| "when" @@ `
+	Component *ComponentDef        `  "component" @@ `
+	Trait     *TraitInheritanceDef `| "trait" @@`
+	Rule      *RuleDef             `| "when" @@ `
 }
 
 type ComponentDef struct {
 	Name   string      `@Ident`
 	Fields []*FieldDef `"{" { @@ } "}"`
+}
+
+type TraitInheritanceDef struct {
+	Name string `@Ident`
 }
 
 type RuleDef struct {

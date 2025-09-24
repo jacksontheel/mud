@@ -25,6 +25,6 @@ func LoadEntitiesFromFile(fileName string) (map[string]*entities.Entity, error) 
 		log.Fatal(err)
 	}
 
-	entities, err := buildAll(ast)
+	entities, err := Compile(ast)
 	return entities, err
 }

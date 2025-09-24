@@ -1,12 +1,12 @@
 entity LivingRoom {
-    has Identity {
+    component Identity {
         name is "Living Room"
         description is "This is a perfectly nice living room."
         aliases is ["room"]
         tags is ["room"]
     }
 
-    has Room {
+    component Room {
         exits is {
             "north": "BedRoom",
             "east": "Bathroom"
@@ -20,12 +20,14 @@ entity LivingRoom {
 }
 
 entity Couch {
-    has Identity {
+    component Identity {
         name is "Couch"
         description is "This is a comfy couch."
         aliases is ["couch"]
         tags is ["furniture"]
     }
+
+    trait Kissable
 
     when attack by #player with #egg {
         print source "You hit the egg upon the couch, gently, as to not disturb the egg."
@@ -40,7 +42,7 @@ entity Couch {
 }
 
 entity Nickel {
-    has Identity {
+    component Identity {
         name is "Nickel"
         description is "A shining nickel, Thomas Jefferson smiles at you from his handsome side profile."
         aliases is ["nickel"]
@@ -49,28 +51,25 @@ entity Nickel {
 }
 
 entity Lamp {
-    has Identity {
+    component Identity {
         name is "Lamp"
         description is "A dimly lit lamp sits in the corner."
         aliases is ["lamp"]
         tags is ["furniture"]
     }
 
-    when kiss by #player {
-        print source "You figure the lamp is roughly the dimensions of a person... you give it a kiss."
-        publish "{source} grabs the lamp and plants a passionate kiss upon it."
-    }
+    trait Standard
 }
 
 entity BedRoom {
-    has Identity {
+    component Identity {
         name is "Bed Room"
         description is "A fun little bedroom."
         aliases is ["room"]
         tags is ["room"]
     }
 
-    has Room {
+    component Room {
         exits is {
             "south": "LivingRoom"
         }
@@ -83,23 +82,25 @@ entity BedRoom {
 }
 
 entity Bed {
-    has Identity {
+    component Identity {
         name is "Bed"
         description is "A bed is well-made and looks inviting."
         aliases is ["bed"]
         tags is ["furniture"]
     }
+
+    trait Standard
 }
 
 entity Bathroom {
-    has Identity {
+    component Identity {
         name is "Bathroom"
         description is "A bathroom, a perfect place to relax and excrete."
         aliases is ["room"]
         tags is ["room"]
     }
 
-    has Room {
+    component Room {
         exits is {
             "west": "LivingRoom"
         }
@@ -111,17 +112,8 @@ entity Bathroom {
     }
 }
 
-entity Toilet {
- has Identity {
-        name is "Toilet"
-        description is "A toilet, you piss and poop in here."
-        aliases is ["toilet"]
-        tags is ["furniture"]
-    }   
-}
-
 entity Goblin {
-   has Identity {
+   component Identity {
         name is "Goblin"
         description is "A funny goblin man no bigger than your fist smiles warmly."
         aliases is ["goblin", "man"]
@@ -140,3 +132,32 @@ entity Goblin {
     }
 }
 
+entity Toilet {
+    component Identity {
+        name is "Toilet"
+        description is "A toilet, you piss and poop in here."
+        aliases is ["toilet"]
+        tags is ["furniture"]
+    }   
+
+    trait Standard
+}
+
+trait Standard {
+    trait Kissable
+    trait Hittable
+}
+
+trait Kissable {
+    when kiss {
+        print source "You kiss the {target}"
+        publish "{source} kisses the {target}."
+    }
+}
+
+trait Hittable {
+    when attack {
+        print source "You hit the {target}"
+        publish "{source} hits the {target}."
+    }
+}
