@@ -102,7 +102,8 @@ entity Bathroom {
 
     component Room {
         exits is {
-            "west": "LivingRoom"
+            "west": "LivingRoom",
+            "east": "MedicineCabinet"
         }
 
         children is [

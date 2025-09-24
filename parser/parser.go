@@ -3,156 +3,21 @@ package parser
 import (
 	"strings"
 
+	"example.com/mud/commands"
 	"example.com/mud/models"
 )
 
-const (
-	CommandMove      = "move"
-	CommandTake      = "take"
-	CommandLook      = "look"
-	CommandAttack    = "attack"
-	CommandKiss      = "kiss"
-	CommandInventory = "inventory"
-	CommandSay       = "say"
-	CommandWhisper   = "whisper"
-)
-
-type Command struct {
-	Kind   string
-	Params map[string]string
-}
-
-var directionAliases = map[string]string{
-	"n":     models.DirectionNorth,
-	"north": models.DirectionNorth,
-
-	"s":     models.DirectionSouth,
-	"south": models.DirectionSouth,
-
-	"e":    models.DirectionEast,
-	"east": models.DirectionEast,
-
-	"w":    models.DirectionWest,
-	"west": models.DirectionWest,
-
-	"u":  models.DirectionUp,
-	"up": models.DirectionUp,
-
-	"d":    models.DirectionDown,
-	"down": models.DirectionDown,
-}
-
-var verbAliases = map[string]string{
-	"go":   CommandMove,
-	"walk": CommandMove,
-	"move": CommandMove,
-
-	"take":    CommandTake,
-	"get":     CommandTake,
-	"grab":    CommandTake,
-	"pickup":  CommandTake,
-	"collect": CommandTake,
-
-	"look":    CommandLook,
-	"examine": CommandLook,
-	"inspect": CommandLook,
-	"l":       CommandLook,
-
-	"attack": CommandAttack,
-	"kill":   CommandAttack,
-	"hit":    CommandAttack,
-
-	"kiss":    CommandKiss,
-	"smooch":  CommandKiss,
-	"makeout": CommandKiss,
-
-	"i": CommandInventory,
-
-	"say": CommandSay,
-
-	"whisper": CommandWhisper,
-}
-
+// TODO: register multi-word merges at the command level instead of in parser
 var multiWordVerbMerges = [][]string{
 	{"pick", "up"},
 	{"make", "out"},
 }
 
-type patToken struct {
-	literal    string
-	slotName   string
-	slotIsRest bool
-	slotType   string
-}
+var directionAliases = commands.DirectionAliases()
 
-type pattern struct {
-	kind   string
-	tokens []patToken
-}
+var verbAliases = commands.AllAliases()
 
-func lit(word string) patToken {
-	return patToken{literal: word}
-}
-func slot(slotType, name string) patToken {
-	return patToken{slotName: name, slotType: slotType}
-}
-func slotRest(slotType, name string) patToken {
-	return patToken{slotName: name, slotType: slotType, slotIsRest: true}
-}
-
-var patterns = []pattern{
-	{kind: CommandMove, tokens: []patToken{
-		slot("direction", "direction"),
-	}},
-	{kind: CommandMove, tokens: []patToken{
-		lit(CommandMove),
-		slot("direction", "direction"),
-	}},
-
-	{kind: CommandTake, tokens: []patToken{
-		lit(CommandTake),
-		slotRest("target", "target"),
-	}},
-
-	{kind: CommandLook, tokens: []patToken{
-		lit(CommandLook),
-	}},
-	{kind: CommandLook, tokens: []patToken{
-		lit(CommandLook),
-		slotRest("target", "target"),
-	}},
-
-	{kind: CommandAttack, tokens: []patToken{
-		lit(CommandAttack),
-		slot("target", "target"),
-		lit("with"),
-		slot("instrument", "instrument"),
-	}},
-	{kind: CommandAttack, tokens: []patToken{
-		lit(CommandAttack),
-		slotRest("target", "target"),
-	}},
-
-	{kind: CommandKiss, tokens: []patToken{
-		lit(CommandKiss),
-		slotRest("target", "target"),
-	}},
-
-	{kind: CommandInventory, tokens: []patToken{
-		lit(CommandInventory),
-	}},
-
-	{kind: CommandSay, tokens: []patToken{
-		lit(CommandSay),
-		slotRest("message", "message"),
-	}},
-
-	{kind: CommandWhisper, tokens: []patToken{
-		lit(CommandWhisper),
-		slot("target", "target"),
-		slotRest("message", "message"),
-	}},
-}
+var patterns = commands.AllPatterns()
 
 func tokenize(input string) []string {
 	s := strings.ToLower(strings.TrimSpace(input))
@@ -167,7 +32,6 @@ func tokenize(input string) []string {
 			parts[0] = base
 		}
 	}
-
 	return parts
 }
 
@@ -214,18 +78,18 @@ func mergeSequences(tokens []string, merges [][]string) []string {
 	return out
 }
 
-func tryMatch(p pattern, tokens []string) (ok bool, params map[string]string) {
+func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]string) {
 	params = map[string]string{}
 	ti := 0
-	for pi := 0; pi < len(p.tokens); pi++ {
-		pt := p.tokens[pi]
+	for pi := 0; pi < len(p.Tokens); pi++ {
+		pt := p.Tokens[pi]
 
-		// if pattern expects a literal, e.g. "take"
-		if pt.literal != "" {
+		// if pattern expects a Literal, e.g. "take"
+		if pt.Literal != "" {
 			if ti >= len(tokens) {
 				return false, nil
 			}
-			if tokens[ti] != pt.literal {
+			if tokens[ti] != pt.Literal {
 				return false, nil
 			}
 			ti++
@@ -233,16 +97,16 @@ func tryMatch(p pattern, tokens []string) (ok bool, params map[string]string) {
 		}
 
 		// if pattern expects slot to be the remaining tokens, e.g. "take big orange key"
-		if pt.slotIsRest {
+		if pt.SlotIsRest {
 			if ti > len(tokens) {
 				return false, nil
 			}
 			rest := tokens[ti:]
-			val, ok := validateSlot(pt.slotType, rest)
+			val, ok := validateSlot(pt.SlotType, rest)
 			if !ok {
 				return false, nil
 			}
-			params[pt.slotName] = val
+			params[pt.SlotName] = val
 			ti = len(tokens)
 			continue
 		}
@@ -251,11 +115,11 @@ func tryMatch(p pattern, tokens []string) (ok bool, params map[string]string) {
 		if ti >= len(tokens) {
 			return false, nil
 		}
-		val, ok := validateSlot(pt.slotType, []string{tokens[ti]})
+		val, ok := validateSlot(pt.SlotType, []string{tokens[ti]})
 		if !ok {
 			return false, nil
 		}
-		params[pt.slotName] = val
+		params[pt.SlotName] = val
 		ti++
 	}
 
@@ -267,8 +131,8 @@ func tryMatch(p pattern, tokens []string) (ok bool, params map[string]string) {
 	return true, params
 }
 
-func validateSlot(slotType string, toks []string) (string, bool) {
-	switch slotType {
+func validateSlot(SlotType string, toks []string) (string, bool) {
+	switch SlotType {
 	case "direction":
 		if len(toks) != 1 {
 			return "", false
@@ -287,17 +151,17 @@ func validateSlot(slotType string, toks []string) (string, bool) {
 	}
 }
 
-func Parse(input string) Command {
+func Parse(input string) commands.Command {
 	toks := tokenize(input)
 	if len(toks) == 0 {
-		return Command{Kind: "", Params: nil}
+		return commands.Command{Kind: "", Params: nil}
 	}
 
 	for _, p := range patterns {
 		if ok, params := tryMatch(p, toks); ok {
-			return Command{Kind: p.kind, Params: params}
+			return commands.Command{Kind: p.Kind, Params: params}
 		}
 	}
 
-	return Command{Kind: "", Params: nil}
+	return commands.Command{Kind: "", Params: nil}
 }
