@@ -9,23 +9,32 @@ import (
 )
 
 type collectedDefs struct {
-	entitiesByName map[string]*EntityDef
-	traitsByName   map[string]*TraitDef
+	entitiesById map[string]*EntityDef
+	traitsById   map[string]*TraitDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
 
+type LoweredEntity struct {
+	name        string
+	description string
+	tags        []string
+	aliases     []string
+	components  []entities.Component
+	rules       []*entities.Rule
+}
+
 type entityPrototype struct {
-	name string
-	ent  *entities.Entity
-	def  *EntityDef
+	id  string
+	ent *entities.Entity
+	def *EntityDef
 }
 
 type entityPrototypes struct {
-	prototypesByName map[string]*entityPrototype
-	traitsByName     map[string]*TraitDef
-	childrenPlan     ChildrenPlan
-	visiting         map[string]struct{}
+	prototypesById map[string]*entityPrototype
+	traitsById     map[string]*TraitDef
+	childrenPlan   ChildrenPlan
+	visiting       map[string]struct{}
 }
 
 func Compile(ast *DSL) (map[string]*entities.Entity, error) {
@@ -43,18 +52,18 @@ func Compile(ast *DSL) (map[string]*entities.Entity, error) {
 		return nil, fmt.Errorf("could not collect prototype entities: %w", err)
 	}
 
-	entitiesByName, err := prototypes.instantiatePrototypes()
+	entitiesById, err := prototypes.instantiatePrototypes()
 	if err != nil {
 		return nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
 	}
 
-	return entitiesByName, nil
+	return entitiesById, nil
 }
 
 // collect entity and trait definitions
 func collectDefs(decls []*TopLevel) (*collectedDefs, error) {
-	entitiesByName := make(map[string]*EntityDef, len(decls))
-	traitsByName := make(map[string]*TraitDef, len(decls))
+	entitiesById := make(map[string]*EntityDef, len(decls))
+	traitsById := make(map[string]*TraitDef, len(decls))
 
 	for _, declaration := range decls {
 		if declaration == nil {
@@ -62,48 +71,48 @@ func collectDefs(decls []*TopLevel) (*collectedDefs, error) {
 		}
 
 		if ed := declaration.Entity; ed != nil {
-			if _, exists := entitiesByName[ed.Name]; exists {
+			if _, exists := entitiesById[ed.Name]; exists {
 				return nil, fmt.Errorf("duplicate entity %s", ed.Name)
 			}
 
-			entitiesByName[ed.Name] = ed
+			entitiesById[ed.Name] = ed
 		} else if td := declaration.Trait; td != nil {
-			if _, exists := entitiesByName[td.Name]; exists {
+			if _, exists := entitiesById[td.Name]; exists {
 				return nil, fmt.Errorf("duplicate trait %s", td.Name)
 			}
 
-			traitsByName[declaration.Trait.Name] = declaration.Trait
+			traitsById[declaration.Trait.Name] = declaration.Trait
 		} else {
 			return nil, fmt.Errorf("declaration at top level is empty")
 		}
 	}
 
 	return &collectedDefs{
-		entitiesByName: entitiesByName,
-		traitsByName:   traitsByName,
+		entitiesById: entitiesById,
+		traitsById:   traitsById,
 	}, nil
 }
 
 // expand traits in each entity definition
 func (c *collectedDefs) collectPrototypes() (*entityPrototypes, error) {
 	ep := &entityPrototypes{
-		prototypesByName: map[string]*entityPrototype{},
-		traitsByName:     c.traitsByName,
-		childrenPlan:     map[string]map[entities.ComponentType][]string{},
-		visiting:         map[string]struct{}{},
+		prototypesById: map[string]*entityPrototype{},
+		traitsById:     c.traitsById,
+		childrenPlan:   map[string]map[entities.ComponentType][]string{},
+		visiting:       map[string]struct{}{},
 	}
 
 	// build prototypes of each entity and put them in name->builtEntity map
-	for name, ed := range c.entitiesByName {
+	for name, ed := range c.entitiesById {
 		// build prototype and populate pending children
 		prototypeEntity, err := ep.buildPrototype(name, ed.Blocks)
 		if err != nil {
 			return nil, fmt.Errorf("build %s: %w", name, err)
 		}
-		ep.prototypesByName[name] = &entityPrototype{
-			name: name,
-			ent:  prototypeEntity,
-			def:  ed,
+		ep.prototypesById[name] = &entityPrototype{
+			id:  name,
+			ent: prototypeEntity,
+			def: ed,
 		}
 	}
 
@@ -111,27 +120,34 @@ func (c *collectedDefs) collectPrototypes() (*entityPrototypes, error) {
 }
 
 // create prototype entity with components. collect child prototype names into the sidecar for later.
-func (ep *entityPrototypes) buildPrototype(name string, blocks []*EntityBlock) (*entities.Entity, error) {
-	e := entities.NewEntity(nil)
+func (ep *entityPrototypes) buildPrototype(id string, blocks []*EntityBlock) (*entities.Entity, error) {
 
-	processedComponents, processedRules, err := ep.expandBlocks(name, blocks)
+	loweredEntity, err := ep.lowerEntity(id, blocks)
 	if err != nil {
 		return nil, fmt.Errorf("could not build prototype: %w", err)
 	}
 
-	for _, c := range processedComponents {
+	e := entities.NewEntity(
+		loweredEntity.name,
+		loweredEntity.description,
+		loweredEntity.aliases,
+		loweredEntity.tags,
+		nil,
+	)
+
+	for _, c := range loweredEntity.components {
 		e.Add(c)
 	}
 
-	if len(processedRules) > 0 {
-		// add eventful to component if it doesn't already have it.
+	if len(loweredEntity.rules) > 0 {
+		// create eventful if it isn't already
 		eventful, ok := entities.GetComponent[*components.Eventful](e)
 		if !ok {
 			eventful = &components.Eventful{Rules: []*entities.Rule{}}
 			e.Add(eventful)
 		}
 
-		for _, r := range processedRules {
+		for _, r := range loweredEntity.rules {
 			eventful.AddRule(r)
 		}
 	}
@@ -143,18 +159,18 @@ func (ep *entityPrototypes) buildPrototype(name string, blocks []*EntityBlock) (
 
 		for _, f := range block.Component.Fields {
 			if f.Key == "children" {
-				if ep.childrenPlan[name] == nil {
-					ep.childrenPlan[name] = make(map[entities.ComponentType][]string)
+				if ep.childrenPlan[id] == nil {
+					ep.childrenPlan[id] = make(map[entities.ComponentType][]string)
 				}
 
 				// populate pending children map
 				componentType, err := entities.ParseComponentType(block.Component.Name)
 				if err != nil {
-					return nil, fmt.Errorf("could not build prototype '%s': %w", name, err)
+					return nil, fmt.Errorf("could not build prototype '%s': %w", id, err)
 				}
 
-				ep.childrenPlan[name][componentType] =
-					append(ep.childrenPlan[name][componentType], f.Value.Strings...)
+				ep.childrenPlan[id][componentType] =
+					append(ep.childrenPlan[id][componentType], f.Value.Strings...)
 			}
 		}
 	}
@@ -163,12 +179,17 @@ func (ep *entityPrototypes) buildPrototype(name string, blocks []*EntityBlock) (
 }
 
 // recursively expand traits in entities
-func (ep *entityPrototypes) expandBlocks(name string, blocks []*EntityBlock) ([]entities.Component, []*entities.Rule, error) {
-	if _, ok := ep.visiting[name]; ok {
-		return nil, nil, fmt.Errorf("cycle detected at %q", name)
+func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*LoweredEntity, error) {
+	if _, ok := ep.visiting[id]; ok {
+		return nil, fmt.Errorf("cycle detected at %q", id)
 	}
-	ep.visiting[name] = struct{}{}
-	defer func() { delete(ep.visiting, name) }()
+	ep.visiting[id] = struct{}{}
+	defer func() { delete(ep.visiting, id) }()
+
+	var name string
+	var description string
+	var aliases []string
+	var tags []string
 
 	components := make([]entities.Component, 0, len(blocks))
 	rules := make([]*entities.Rule, 0, len(blocks))
@@ -178,34 +199,77 @@ func (ep *entityPrototypes) expandBlocks(name string, blocks []*EntityBlock) ([]
 		if block.Rule != nil {
 			rule, err := buildRule(block.Rule)
 			if err != nil {
-				return nil, nil, fmt.Errorf("could not process rule %s: %w", block.Rule.Command, err)
+				return nil, fmt.Errorf("could not process rule %s: %w", block.Rule.Command, err)
 			}
 			rules = append(rules, rule)
 		} else if block.Component != nil {
 			// process component into prototype without children
 			comp, err := processComponentPrototype(block.Component)
 			if err != nil {
-				return nil, nil, fmt.Errorf("could not process component %s: %w", block.Component.Name, err)
+				return nil, fmt.Errorf("could not process component %s: %w", block.Component.Name, err)
 			}
 			components = append(components, comp)
 		} else if block.Trait != nil {
-			traitC, traitR, err := ep.expandBlocks(block.Trait.Name, ep.traitsByName[block.Trait.Name].Blocks)
+			loweredTrait, err := ep.lowerEntity(block.Trait.Name, ep.traitsById[block.Trait.Name].Blocks)
 			if err != nil {
-				return nil, nil, fmt.Errorf("could not process trait '%s': %w", block.Trait.Name, err)
+				return nil, fmt.Errorf("could not process trait '%s': %w", block.Trait.Name, err)
 			}
 
-			components = append(components, traitC...)
-			rules = append(rules, traitR...)
+			components = append(components, loweredTrait.components...)
+			rules = append(rules, loweredTrait.rules...)
+		} else if block.Field != nil {
+			f := block.Field
+			switch f.Key {
+			case "name":
+				if f.Value.String == nil {
+					return nil, fmt.Errorf("identity.name must be a string")
+				}
+				name = *f.Value.String
+			case "description":
+				if f.Value.String == nil {
+					return nil, fmt.Errorf("identity.description must be a string")
+				}
+				description = *f.Value.String
+			case "aliases":
+				aliases = f.Value.Strings
+			case "tags":
+				tags = f.Value.Strings
+			default:
+				return nil, fmt.Errorf("identity: unknown field %s", f.Key)
+			}
+		} else {
+			return nil, fmt.Errorf("could not expand empty entity block")
 		}
 	}
 
-	return components, rules, nil
+	// only do verification if at a top level entity
+	if len(ep.visiting) == 1 {
+		// verify name, description, and aliases are set. Empty tags is ok
+		if name == "" {
+			return nil, fmt.Errorf("entity '%s' has no name", id)
+		}
+		if description == "" {
+			return nil, fmt.Errorf("entity '%s' has no description", id)
+		}
+		if len(aliases) == 0 {
+			return nil, fmt.Errorf("entity '%s' has no aliases", id)
+		}
+	}
+
+	return &LoweredEntity{
+		name:        name,
+		description: description,
+		tags:        tags,
+		aliases:     aliases,
+		components:  components,
+		rules:       rules,
+	}, nil
 }
 
 // loop through prototypes and instantiate them into a map of entities by name
 func (ep *entityPrototypes) instantiatePrototypes() (map[string]*entities.Entity, error) {
-	out := make(map[string]*entities.Entity, len(ep.prototypesByName))
-	for name := range ep.prototypesByName {
+	out := make(map[string]*entities.Entity, len(ep.prototypesById))
+	for name := range ep.prototypesById {
 		entity, err := ep.instantiate(name, nil)
 		if err != nil {
 			return nil, fmt.Errorf("could not instantiate '%s': %w", name, err)
@@ -216,22 +280,22 @@ func (ep *entityPrototypes) instantiatePrototypes() (map[string]*entities.Entity
 }
 
 // recursively instantiate a named prototype and wire up children for all child-holding components.
-func (ep *entityPrototypes) instantiate(name string, parent entities.ComponentWithChildren) (*entities.Entity, error) {
-	be, ok := ep.prototypesByName[name]
+func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWithChildren) (*entities.Entity, error) {
+	be, ok := ep.prototypesById[id]
 	if !ok {
-		return nil, fmt.Errorf("unknown prototype %q", name)
+		return nil, fmt.Errorf("unknown prototype %q", id)
 	}
-	if _, ok := ep.visiting[name]; ok {
-		return nil, fmt.Errorf("cycle detected at %q", name)
+	if _, ok := ep.visiting[id]; ok {
+		return nil, fmt.Errorf("cycle detected at %q", id)
 	}
-	ep.visiting[name] = struct{}{}
-	defer func() { delete(ep.visiting, name) }()
+	ep.visiting[id] = struct{}{}
+	defer func() { delete(ep.visiting, id) }()
 
 	inst := be.ent.Copy(parent)
 
 	// for each child-capable component on the entity, look up its pending child names from the prototype’s sidecar and attach recursively.
 	if rm, ok := entities.GetComponent[*components.Room](inst); ok {
-		slot := ep.childrenPlan[name][entities.ComponentRoom]
+		slot := ep.childrenPlan[id][entities.ComponentRoom]
 		if len(slot) > 0 {
 			for _, childName := range slot {
 				childInst, err := ep.instantiate(childName, rm)

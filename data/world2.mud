@@ -1,10 +1,8 @@
 entity MedicineCabinet {
-    component Identity {
-        name is "Medicine Cabinet"
-        description is "A medicine cabinet. God only knows how you managed to fit in here."
-        aliases is ["room"]
-        tags is ["room"]
-    }
+    name is "Medicine Cabinet"
+    description is "A medicine cabinet. God only knows how you managed to fit in here."
+    aliases is ["room"]
+    tags is ["room"]
 
     component Room {
         exits is {
@@ -18,10 +16,8 @@ entity MedicineCabinet {
 }
 
 entity Medicine {
-    component Identity {
-        name is "Medicine"
-        description is "Bottles of pills line the shelves -- the eponymous medicine for which the cabinet is named."
-        aliases is ["medicine", "pills", "bottles"]
-        tags is ["consumable"]
-    }   
+    name is "Medicine"
+    description is "Bottles of pills line the shelves -- the eponymous medicine for which the cabinet is named."
+    aliases is ["medicine", "pills", "bottles"]
+    tags is ["consumable"]
 }

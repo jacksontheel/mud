@@ -15,12 +15,8 @@ func NewChildren() *Children {
 }
 
 func (c *Children) AddChild(child *entities.Entity) error {
-	identity, err := entities.RequireComponent[*Identity](child)
-	if err != nil {
-		return err
-	}
+	aliases := child.Aliases
 
-	aliases := identity.Aliases
 	if len(aliases) == 0 {
 		return nil
 	}

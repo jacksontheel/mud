@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"example.com/mud/world/entities"
-	"example.com/mud/world/entities/components"
 )
 
 type Print struct {
@@ -50,30 +49,15 @@ func (p *Print) Execute(ev *entities.Event) error {
 // for now it just does some simple replacements.
 func formatText(s string, ev *entities.Event) (string, error) {
 	if ev.Source != nil {
-		identity, err := entities.RequireComponent[*components.Identity](ev.Source)
-		if err != nil {
-			return "", fmt.Errorf("could not format {source} for event: %w", err)
-		}
-
-		s = strings.ReplaceAll(s, "{source}", identity.Name)
+		s = strings.ReplaceAll(s, "{source}", ev.Source.Name)
 	}
 
 	if ev.Instrument != nil {
-		identity, err := entities.RequireComponent[*components.Identity](ev.Instrument)
-		if err != nil {
-			return "", fmt.Errorf("could not format {instrument} for event: %w", err)
-		}
-
-		s = strings.ReplaceAll(s, "{instrument}", identity.Name)
+		s = strings.ReplaceAll(s, "{instrument}", ev.Instrument.Name)
 	}
 
 	if ev.Target != nil {
-		identity, err := entities.RequireComponent[*components.Identity](ev.Target)
-		if err != nil {
-			return "", fmt.Errorf("could not format {target} for event: %w", err)
-		}
-
-		s = strings.ReplaceAll(s, "{target}", identity.Name)
+		s = strings.ReplaceAll(s, "{target}", ev.Target.Name)
 	}
 
 	return s, nil

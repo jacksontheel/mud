@@ -16,7 +16,6 @@ func registerComponentBuilder(name string, b componentBuilder) {
 }
 
 func init() {
-	registerComponentBuilder("Identity", buildIdentity)
 	registerComponentBuilder("Room", buildRoom)
 }
 
@@ -25,31 +24,6 @@ func processComponentPrototype(def *ComponentDef) (entities.Component, error) {
 		return b(def)
 	}
 	return nil, fmt.Errorf("could not match component name %s", def.Name)
-}
-
-func buildIdentity(def *ComponentDef) (entities.Component, error) {
-	id := &components.Identity{}
-	for _, f := range def.Fields {
-		switch f.Key {
-		case "name":
-			if f.Value.String == nil {
-				return nil, fmt.Errorf("identity.name must be a string")
-			}
-			id.Name = *f.Value.String
-		case "description":
-			if f.Value.String == nil {
-				return nil, fmt.Errorf("identity.description must be a string")
-			}
-			id.Description = *f.Value.String
-		case "aliases":
-			id.Aliases = f.Value.Strings
-		case "tags":
-			id.Tags = f.Value.Strings
-		default:
-			return nil, fmt.Errorf("identity: unknown field %s", f.Key)
-		}
-	}
-	return id, nil
 }
 
 func buildRoom(def *ComponentDef) (entities.Component, error) {
