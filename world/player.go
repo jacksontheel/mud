@@ -17,13 +17,13 @@ type Player struct {
 }
 
 func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player {
-	playerEntity := entities.NewEntity(nil)
-	playerEntity.Add(&components.Identity{
-		Name:        name,
-		Description: fmt.Sprintf("%s the brave hero is here.", name),
-		Aliases:     []string{strings.ToLower(name)},
-		Tags:        []string{"player"},
-	})
+	playerEntity := entities.NewEntity(
+		name,
+		fmt.Sprintf("%s the brave hero is here.", name),
+		[]string{strings.ToLower(name)},
+		[]string{"player"},
+		nil,
+	)
 
 	inventory := components.NewInventory()
 	inventory.GetChildren().AddChild(createEgg(inventory))
@@ -63,13 +63,13 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 
 // temporary function to test inventory
 func createEgg(parent entities.ComponentWithChildren) *entities.Entity {
-	egg := entities.NewEntity(parent)
-	egg.Add(&components.Identity{
-		Name:        "Egg",
-		Description: "A bulbous, green-speckled egg.",
-		Aliases:     []string{"egg"},
-		Tags:        []string{"egg"},
-	})
+	egg := entities.NewEntity(
+		"Egg",
+		"A bulbous, green-speckled egg.",
+		[]string{"egg"},
+		[]string{"egg"},
+		nil,
+	)
 
 	return egg
 }
@@ -124,11 +124,9 @@ func (p *Player) Look(alias string) (string, error) {
 	}
 
 	if target != nil {
-		if descriptioned, ok := entities.GetComponent[*components.Identity](target); ok { // potentially a RequireComponent
-			return descriptioned.Description, nil
-		}
-		return fmt.Sprintf("The %s before you is undescribable.", alias), nil
+		return target.Description, nil
 	}
+
 	return "You must be going mad. That's not here.", nil
 }
 

@@ -96,12 +96,8 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 	if err != nil {
 		return "", err
 	}
-	roomIdentity, ok := entities.GetComponent[*components.Identity](r)
-	if !ok {
-		return "This room has no description", nil
-	}
 
-	roomDescription := strings.TrimSpace(roomIdentity.Description)
+	roomDescription := strings.TrimSpace(r.Description)
 	b.WriteString(roomDescription)
 	b.WriteString("\n")
 
@@ -110,10 +106,8 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 			continue
 		}
 
-		if eIdentity, ok := entities.GetComponent[*components.Identity](e); ok {
-			b.WriteString(eIdentity.Description)
-			b.WriteString("\n")
-		}
+		b.WriteString(e.Description)
+		b.WriteString("\n")
 	}
 
 	b.WriteString(room.GetExitText())

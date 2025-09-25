@@ -8,31 +8,32 @@ import (
 
 type Entity struct {
 	mu         sync.RWMutex
-	parent     ComponentWithChildren
 	components map[reflect.Type]Component
+
+	Name        string
+	Description string
+	Aliases     []string
+	Tags        []string
+	Parent      ComponentWithChildren
 }
 
-func NewEntity(parent ComponentWithChildren) *Entity {
+func NewEntity(name string, description string, aliases []string, tags []string, parent ComponentWithChildren) *Entity {
 	return &Entity{
-		parent:     parent,
-		components: map[reflect.Type]Component{},
+		components:  map[reflect.Type]Component{},
+		Name:        name,
+		Description: description,
+		Aliases:     aliases,
+		Tags:        tags,
+		Parent:      parent,
 	}
 }
 
 func (e *Entity) Copy(parent ComponentWithChildren) *Entity {
-	newEntity := NewEntity(parent)
+	newEntity := NewEntity(e.Name, e.Description, e.Aliases, e.Tags, parent)
 	for _, c := range e.components {
 		newEntity.Add(c.Copy())
 	}
 	return newEntity
-}
-
-func (e *Entity) GetParent() ComponentWithChildren {
-	return e.parent
-}
-
-func (e *Entity) SetParent(parent ComponentWithChildren) {
-	e.parent = parent
 }
 
 func (e *Entity) Add(c Component) *Entity {

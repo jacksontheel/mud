@@ -41,6 +41,7 @@ type EntityBlock struct {
 	Component *ComponentDef        `  "component" @@ `
 	Trait     *TraitInheritanceDef `| "trait" @@`
 	Rule      *RuleDef             `| "when" @@ `
+	Field     *FieldDef            `| @@`
 }
 
 type ComponentDef struct {

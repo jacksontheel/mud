@@ -39,12 +39,7 @@ func (i *Inventory) Print() (string, error) {
 	b.WriteString("You are carrying: [")
 
 	for _, child := range i.GetChildren().GetChildren() {
-		identity, err := entities.RequireComponent[*Identity](child)
-		if err != nil {
-			return "", err
-		}
-
-		if n := identity.Name; n != "" {
+		if n := child.Name; n != "" {
 			b.WriteString(n)
 			b.WriteString(", ")
 		}

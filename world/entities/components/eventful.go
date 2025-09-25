@@ -80,12 +80,7 @@ func matchEntityToSelector(selector *entities.EntitySelector, target, listener *
 	case "self":
 		return target == listener, nil
 	case "tag":
-		identity, err := entities.RequireComponent[*Identity](target)
-		if err != nil {
-			return false, err
-		}
-
-		for _, t := range identity.Tags {
+		for _, t := range target.Tags {
 			if selector.Value == t {
 				return true, nil
 			}

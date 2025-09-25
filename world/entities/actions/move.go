@@ -58,11 +58,11 @@ func (m *Move) Execute(ev *entities.Event) error {
 	}
 
 	// remove entity from old parent
-	oldParent := origin.GetParent()
+	oldParent := origin.Parent
 	oldParent.GetChildren().RemoveChild(origin)
 
 	// set parent of entity and add it to component
-	origin.SetParent(component)
+	origin.Parent = component
 	component.GetChildren().AddChild(origin)
 
 	return nil
