@@ -49,8 +49,6 @@ entity Lamp {
     description is "A dimly lit lamp sits in the corner."
     aliases is ["lamp"]
     tags is ["furniture"]
-
-    trait Standard
 }
 
 entity BedRoom {

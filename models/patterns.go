@@ -4,22 +4,22 @@ type PatToken struct {
 	Literal    string
 	SlotName   string
 	SlotIsRest bool
-	SlotType   string
 }
 
 type Pattern struct {
-	Kind   string
-	Tokens []PatToken
+	Kind           string
+	Tokens         []PatToken
+	NoMatchMessage string
 }
 
 func Lit(word string) PatToken {
 	return PatToken{Literal: word}
 }
 
-func Slot(slotType, name string) PatToken {
-	return PatToken{SlotName: name, SlotType: slotType}
+func Slot(name string) PatToken {
+	return PatToken{SlotName: name}
 }
 
-func SlotRest(slotType, name string) PatToken {
-	return PatToken{SlotName: name, SlotType: slotType, SlotIsRest: true}
+func SlotRest(name string) PatToken {
+	return PatToken{SlotName: name, SlotIsRest: true}
 }
