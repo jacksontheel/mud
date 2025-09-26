@@ -3,11 +3,12 @@ package dsl
 import (
 	"fmt"
 
+	"example.com/mud/dsl/ast"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 )
 
-type componentBuilder func(def *ComponentDef) (entities.Component, error)
+type componentBuilder func(def *ast.ComponentDef) (entities.Component, error)
 
 var componentBuilders = map[string]componentBuilder{}
 
@@ -19,19 +20,19 @@ func init() {
 	registerComponentBuilder("Room", buildRoom)
 }
 
-func processComponentPrototype(def *ComponentDef) (entities.Component, error) {
+func processComponentPrototype(def *ast.ComponentDef) (entities.Component, error) {
 	if b, ok := componentBuilders[def.Name]; ok {
 		return b(def)
 	}
 	return nil, fmt.Errorf("could not match component name %s", def.Name)
 }
 
-func buildRoom(def *ComponentDef) (entities.Component, error) {
+func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	rm := components.NewRoom()
 	for _, f := range def.Fields {
 		switch f.Key {
 		case "exits":
-			m := f.Value.asMap()
+			m := f.Value.AsMap()
 			if m == nil {
 				m = map[string]string{}
 			}

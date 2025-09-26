@@ -7,8 +7,8 @@ import (
 )
 
 type Move struct {
-	RoleOrigin      EventRole
-	RoleDestination EventRole
+	RoleOrigin      entities.EventRole
+	RoleDestination entities.EventRole
 	ComponentType   entities.ComponentType
 }
 
@@ -22,11 +22,11 @@ func (m *Move) Execute(ev *entities.Event) error {
 
 	var origin *entities.Entity
 	switch m.RoleOrigin {
-	case EventRoleSource:
+	case entities.EventRoleSource:
 		origin = ev.Source
-	case EventRoleInstrument:
+	case entities.EventRoleInstrument:
 		origin = ev.Instrument
-	case EventRoleTarget:
+	case entities.EventRoleTarget:
 		origin = ev.Target
 	default:
 		return fmt.Errorf("invalid origin role '%s' for move action", m.RoleOrigin.String())
@@ -38,11 +38,11 @@ func (m *Move) Execute(ev *entities.Event) error {
 
 	var destination *entities.Entity
 	switch m.RoleDestination {
-	case EventRoleSource:
+	case entities.EventRoleSource:
 		destination = ev.Source
-	case EventRoleInstrument:
+	case entities.EventRoleInstrument:
 		destination = ev.Instrument
-	case EventRoleTarget:
+	case entities.EventRoleTarget:
 		destination = ev.Target
 	default:
 		return fmt.Errorf("invalid origin role '%s' for move action", m.RoleDestination.String())

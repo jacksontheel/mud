@@ -3,41 +3,43 @@ package dsl
 import (
 	"fmt"
 
+	"example.com/mud/dsl/ast"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
+	"example.com/mud/world/entities/conditions"
 )
 
 type collectedDefs struct {
-	entitiesById map[string]*EntityDef
-	traitsById   map[string]*TraitDef
+	entitiesById map[string]*ast.EntityDef
+	traitsById   map[string]*ast.TraitDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
 
 type LoweredEntity struct {
-	name        string
-	description string
-	tags        []string
-	aliases     []string
-	components  []entities.Component
-	rules       []*entities.Rule
+	name           string
+	description    string
+	tags           []string
+	aliases        []string
+	components     []entities.Component
+	rulesByCommand map[string][]*entities.Rule
 }
 
 type entityPrototype struct {
 	id  string
 	ent *entities.Entity
-	def *EntityDef
+	def *ast.EntityDef
 }
 
 type entityPrototypes struct {
 	prototypesById map[string]*entityPrototype
-	traitsById     map[string]*TraitDef
+	traitsById     map[string]*ast.TraitDef
 	childrenPlan   ChildrenPlan
 	visiting       map[string]struct{}
 }
 
-func Compile(ast *DSL) (map[string]*entities.Entity, error) {
+func Compile(ast *ast.DSL) (map[string]*entities.Entity, error) {
 	if ast == nil {
 		return nil, fmt.Errorf("nil DSL")
 	}
@@ -61,9 +63,9 @@ func Compile(ast *DSL) (map[string]*entities.Entity, error) {
 }
 
 // collect entity and trait definitions
-func collectDefs(decls []*TopLevel) (*collectedDefs, error) {
-	entitiesById := make(map[string]*EntityDef, len(decls))
-	traitsById := make(map[string]*TraitDef, len(decls))
+func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
+	entitiesById := make(map[string]*ast.EntityDef, len(decls))
+	traitsById := make(map[string]*ast.TraitDef, len(decls))
 
 	for _, declaration := range decls {
 		if declaration == nil {
@@ -120,7 +122,7 @@ func (c *collectedDefs) collectPrototypes() (*entityPrototypes, error) {
 }
 
 // create prototype entity with components. collect child prototype names into the sidecar for later.
-func (ep *entityPrototypes) buildPrototype(id string, blocks []*EntityBlock) (*entities.Entity, error) {
+func (ep *entityPrototypes) buildPrototype(id string, blocks []*ast.EntityBlock) (*entities.Entity, error) {
 
 	loweredEntity, err := ep.lowerEntity(id, blocks)
 	if err != nil {
@@ -139,16 +141,20 @@ func (ep *entityPrototypes) buildPrototype(id string, blocks []*EntityBlock) (*e
 		e.Add(c)
 	}
 
-	if len(loweredEntity.rules) > 0 {
-		// create eventful if it isn't already
+	if len(loweredEntity.rulesByCommand) > 0 {
+		// create eventful if it doesn't already exist
 		eventful, ok := entities.GetComponent[*components.Eventful](e)
 		if !ok {
-			eventful = &components.Eventful{Rules: []*entities.Rule{}}
+			eventful = &components.Eventful{
+				Rules: map[string][]*entities.Rule{},
+			}
 			e.Add(eventful)
 		}
 
-		for _, r := range loweredEntity.rules {
-			eventful.AddRule(r)
+		for command, rulesByCommand := range loweredEntity.rulesByCommand {
+			for _, r := range rulesByCommand {
+				eventful.AddRule(command, r)
+			}
 		}
 	}
 
@@ -179,7 +185,7 @@ func (ep *entityPrototypes) buildPrototype(id string, blocks []*EntityBlock) (*e
 }
 
 // recursively expand traits in entities
-func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*LoweredEntity, error) {
+func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*LoweredEntity, error) {
 	if _, ok := ep.visiting[id]; ok {
 		return nil, fmt.Errorf("cycle detected at %q", id)
 	}
@@ -192,16 +198,16 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*Lowe
 	var tags []string
 
 	components := make([]entities.Component, 0, len(blocks))
-	rules := make([]*entities.Rule, 0, len(blocks))
+	rulesByCommand := make(map[string][]*entities.Rule, len(blocks))
 
 	for _, block := range blocks {
-		// process rules
-		if block.Rule != nil {
-			rule, err := buildRule(block.Rule)
+		if block.Reaction != nil {
+			// process reaction
+			rules, err := buildReaction(block.Reaction)
 			if err != nil {
-				return nil, fmt.Errorf("could not process rule %s: %w", block.Rule.Command, err)
+				return nil, err
 			}
-			rules = append(rules, rule)
+			rulesByCommand[block.Reaction.Command] = append(rulesByCommand[block.Reaction.Command], rules...)
 		} else if block.Component != nil {
 			// process component into prototype without children
 			comp, err := processComponentPrototype(block.Component)
@@ -210,13 +216,16 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*Lowe
 			}
 			components = append(components, comp)
 		} else if block.Trait != nil {
+			// TODO this dereferences a nil pointer if the trait doesn't exist
 			loweredTrait, err := ep.lowerEntity(block.Trait.Name, ep.traitsById[block.Trait.Name].Blocks)
 			if err != nil {
 				return nil, fmt.Errorf("could not process trait '%s': %w", block.Trait.Name, err)
 			}
 
 			components = append(components, loweredTrait.components...)
-			rules = append(rules, loweredTrait.rules...)
+			for command, traitRules := range loweredTrait.rulesByCommand {
+				rulesByCommand[command] = append(rulesByCommand[command], traitRules...)
+			}
 		} else if block.Field != nil {
 			f := block.Field
 			switch f.Key {
@@ -257,12 +266,12 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*Lowe
 	}
 
 	return &LoweredEntity{
-		name:        name,
-		description: description,
-		tags:        tags,
-		aliases:     aliases,
-		components:  components,
-		rules:       rules,
+		name:           name,
+		description:    description,
+		tags:           tags,
+		aliases:        aliases,
+		components:     components,
+		rulesByCommand: rulesByCommand,
 	}, nil
 }
 
@@ -310,15 +319,28 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 	return inst, nil
 }
 
-func buildRule(def *RuleDef) (*entities.Rule, error) {
-	when, err := buildWhen(def)
+func buildReaction(def *ast.ReactionDef) ([]*entities.Rule, error) {
+	rules := make([]*entities.Rule, 0, len(def.Rules))
+	for _, r := range def.Rules {
+		rule, err := buildRule(r)
+		if err != nil {
+			return nil, fmt.Errorf("could not build reaction for %s: %w", def.Command, err)
+		}
+
+		rules = append(rules, rule)
+	}
+	return rules, nil
+}
+
+func buildRule(def *ast.RuleDef) (*entities.Rule, error) {
+	when, err := buildWhen(def.When)
 	if err != nil {
-		return nil, fmt.Errorf("could not process 'when' for reaction on %s", def.Command)
+		return nil, fmt.Errorf("could not build rule: %w", err)
 	}
 
-	then, err := buildThen(def)
+	then, err := buildThen(def.Then)
 	if err != nil {
-		return nil, fmt.Errorf("could not process 'then' for reaction on %s: %w", def.Command, err)
+		return nil, fmt.Errorf("could not build rule: %w", err)
 	}
 
 	return &entities.Rule{
@@ -327,66 +349,101 @@ func buildRule(def *RuleDef) (*entities.Rule, error) {
 	}, nil
 }
 
-func buildWhen(def *RuleDef) (*entities.When, error) {
-	sourceSelector, err := buildEntitySelector(def.By)
-	if err != nil {
-		return nil, fmt.Errorf("could not create selector for when reference %s: %w", *def.By, err)
+func buildWhen(def *ast.WhenBlock) ([]entities.Condition, error) {
+	if def == nil {
+		return []entities.Condition{}, nil
 	}
 
-	instrumentSelector, err := buildEntitySelector(def.With)
-	if err != nil {
-		return nil, fmt.Errorf("could not create selector for when reference %s: %w", *def.With, err)
+	ret := make([]entities.Condition, len(def.Conds))
+
+	for i, cDef := range def.Conds {
+		condition, err := BuildCondition(cDef)
+		if err != nil {
+			return nil, fmt.Errorf("build when: %w", err)
+		}
+		ret[i] = condition
 	}
 
-	return &entities.When{
-		Type:       def.Command,
-		Source:     sourceSelector,
-		Instrument: instrumentSelector,
-	}, nil
+	return ret, nil
 }
 
-func buildEntitySelector(ref *string) (*entities.EntitySelector, error) {
-	if ref == nil || *ref == "" {
-		return nil, nil
-	}
-	value := *ref
+func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
+	var newCondition entities.Condition
 
-	switch value[0] {
-	case '#': // tag
-		value = value[1:]
-		return &entities.EntitySelector{
-			Type:  "tag",
-			Value: value,
-		}, nil
-	default:
-		return nil, fmt.Errorf("illegal value reference for when: %s", value)
+	if def.HasTag != nil {
+		eventRole, err := entities.ParseEventRole(def.HasTag.Target)
+		if err != nil {
+			return nil, fmt.Errorf("could not build has tag condition: %w", err)
+		}
+
+		newCondition = &conditions.HasTag{
+			EventRole: eventRole,
+			Tag:       def.HasTag.Tag,
+		}
+	} else if def.Not != nil {
+		nestedCondition, err := BuildCondition(def.Not.Cond)
+		if err != nil {
+			return nil, fmt.Errorf("not condition: %w", err)
+		}
+
+		newCondition = &conditions.Not{
+			Cond: nestedCondition,
+		}
+	} else if def.IsPresent != nil {
+		eventRole, err := entities.ParseEventRole(def.IsPresent.Role)
+		if err != nil {
+			return nil, fmt.Errorf("could not build has tag condition: %w", err)
+		}
+
+		newCondition = &conditions.IsPresent{
+			EventRole: eventRole,
+		}
+	} else if def.EventRolesEqualCondition != nil {
+		role1, err := entities.ParseEventRole(def.EventRolesEqualCondition.Role1)
+		if err != nil {
+			return nil, fmt.Errorf("event roles equal condition: %w", err)
+		}
+
+		role2, err := entities.ParseEventRole(def.EventRolesEqualCondition.Role2)
+		if err != nil {
+			return nil, fmt.Errorf("event roles equal condition: %w", err)
+		}
+
+		newCondition = &conditions.EventRolesEqual{
+			EventRole1: role1,
+			EventRole2: role2,
+		}
+	} else {
+		return nil, fmt.Errorf("action in when is empty")
 	}
+
+	return newCondition, nil
 }
 
-func buildThen(def *RuleDef) ([]entities.Action, error) {
+func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 	ret := make([]entities.Action, len(def.Actions))
 
 	for i, aDef := range def.Actions {
 		var newAction entities.Action
 
 		if aDef.Print != nil {
-			printTarget := actions.StringToEventRole(aDef.Print.Target)
-			if printTarget == actions.EventRoleUnknown {
-				return nil, fmt.Errorf("unknown print target %s", aDef.Print.Target)
+			eventRole, err := entities.ParseEventRole(aDef.Print.Target)
+			if err != nil {
+				return nil, fmt.Errorf("could not build print action: %w", err)
 			}
 
 			newAction = &actions.Print{
 				Text:      aDef.Print.Value,
-				EventRole: actions.StringToEventRole(aDef.Print.Target),
+				EventRole: eventRole,
 			}
 		} else if aDef.Publish != nil {
 			newAction = &actions.Publish{
 				Text: aDef.Publish.Value,
 			}
 		} else if aDef.Copy != nil {
-			copyTarget := actions.StringToEventRole(aDef.Copy.Target)
-			if copyTarget == actions.EventRoleUnknown {
-				return nil, fmt.Errorf("unknown copy target %s", aDef.Copy.Target)
+			eventRole, err := entities.ParseEventRole(aDef.Copy.Target)
+			if eventRole == entities.EventRoleUnknown {
+				return nil, fmt.Errorf("could not build copy action: %w", err)
 			}
 
 			component, err := entities.ParseComponentType(aDef.Copy.Component)
@@ -396,18 +453,18 @@ func buildThen(def *RuleDef) ([]entities.Action, error) {
 
 			newAction = &actions.Copy{
 				EntityId:      aDef.Copy.EntityId,
-				EventRole:     actions.StringToEventRole(aDef.Copy.Target),
+				EventRole:     eventRole,
 				ComponentType: component,
 			}
 		} else if aDef.Move != nil {
-			roleOrigin := actions.StringToEventRole(aDef.Move.RoleOrigin)
-			if roleOrigin == actions.EventRoleUnknown {
-				return nil, fmt.Errorf("unknown move origin role %s", aDef.Copy.Target)
+			roleOrigin, err := entities.ParseEventRole(aDef.Move.RoleOrigin)
+			if err != nil {
+				return nil, fmt.Errorf("could not build move action for origin: %w", err)
 			}
 
-			roleDestination := actions.StringToEventRole(aDef.Move.RoleDestination)
-			if roleDestination == actions.EventRoleUnknown {
-				return nil, fmt.Errorf("unknown move destination role %s", aDef.Copy.Target)
+			roleDestination, err := entities.ParseEventRole(aDef.Move.RoleDestination)
+			if err != nil {
+				return nil, fmt.Errorf("could not build move action for destination: %w", err)
 			}
 
 			component, err := entities.ParseComponentType(aDef.Move.Component)

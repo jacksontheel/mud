@@ -1,10 +1,11 @@
-package dsl
+package ast
 
 import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-var dslLexer = lexer.MustSimple([]lexer.SimpleRule{
+var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
+	{Name: "Presence", Pattern: `\b(?:anything|nothing)\b`},
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},
@@ -40,7 +41,7 @@ type TraitDef struct {
 type EntityBlock struct {
 	Component *ComponentDef        `  "component" @@ `
 	Trait     *TraitInheritanceDef `| "trait" @@`
-	Rule      *RuleDef             `| "when" @@ `
+	Reaction  *ReactionDef         `| "react" @@ `
 	Field     *FieldDef            `| @@`
 }
 
@@ -53,11 +54,21 @@ type TraitInheritanceDef struct {
 	Name string `@Ident`
 }
 
+type ReactionDef struct {
+	Command string     `@Ident`
+	Rules   []*RuleDef `"{" { @@ } "}"`
+}
+
 type RuleDef struct {
-	Command string       `@Ident`
-	By      *string      `[ "by" @Tag ]`
-	With    *string      `[ "with" @Tag ]`
-	On      *string      `[ "on" @Tag ]`
+	When *WhenBlock `[ "when" @@ ]`
+	Then *ThenBlock `"then" @@`
+}
+
+type WhenBlock struct {
+	Conds []*ConditionDef `"{" { @@ } "}"`
+}
+
+type ThenBlock struct {
 	Actions []*ActionDef `"{" { @@ } "}"`
 }
 
@@ -69,38 +80,4 @@ type FieldDef struct {
 type KV struct {
 	Key   string `@String`
 	Value string `":" @String`
-}
-
-type Literal struct {
-	String  *string  `  @String`
-	Strings []string `| "[" @String { "," @String } "]"`
-	Pairs   []KV     `| "{" @@ { "," @@ } "}"`
-}
-
-type ActionDef struct {
-	Print   *PrintAction   `  "print" @@`
-	Publish *PublishAction `| "publish" @@`
-	Copy    *CopyAction    `| "copy" @@`
-	Move    *MoveAction    `| "move" @@`
-}
-
-type PrintAction struct {
-	Target string `@Ident`
-	Value  string ` @String`
-}
-
-type PublishAction struct {
-	Value string ` @String`
-}
-
-type CopyAction struct {
-	EntityId  string ` @String`
-	Target    string ` "to" @Ident `
-	Component string ` @Ident`
-}
-
-type MoveAction struct {
-	RoleOrigin      string ` @Ident`
-	RoleDestination string ` "to" @Ident `
-	Component       string ` @Ident`
 }

@@ -7,19 +7,20 @@ import (
 	"path/filepath"
 	"strings"
 
+	"example.com/mud/dsl/ast"
 	"example.com/mud/world/entities"
 	participle "github.com/alecthomas/participle/v2"
 )
 
 func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entity, error) {
-	parser := participle.MustBuild[DSL](
-		participle.Lexer(dslLexer),
+	parser := participle.MustBuild[ast.DSL](
+		participle.Lexer(ast.DslLexer),
 		participle.Elide("Whitespace"),
 		participle.Unquote("String"),
 	)
 
 	// create container for file contents
-	var ast = &DSL{}
+	var ast = &ast.DSL{}
 
 	filepath.WalkDir(directoryName, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
