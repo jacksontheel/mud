@@ -9,7 +9,7 @@ import (
 
 type Print struct {
 	Text      string
-	EventRole EventRole
+	EventRole entities.EventRole
 }
 
 var _ entities.Action = &Print{}
@@ -25,11 +25,11 @@ func (p *Print) Execute(ev *entities.Event) error {
 
 	var recipient *entities.Entity
 	switch p.EventRole {
-	case EventRoleSource:
+	case entities.EventRoleSource:
 		recipient = ev.Source
-	case EventRoleInstrument:
+	case entities.EventRoleInstrument:
 		recipient = ev.Instrument
-	case EventRoleTarget:
+	case entities.EventRoleTarget:
 		recipient = ev.Target
 	default:
 		return fmt.Errorf("invalid role '%s' for print action", p.EventRole.String())

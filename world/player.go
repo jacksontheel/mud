@@ -7,6 +7,7 @@ import (
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
+	"example.com/mud/world/entities/conditions"
 )
 
 type Player struct {
@@ -30,23 +31,24 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 	playerEntity.Add(inventory)
 
 	playerEntity.Add(&components.Eventful{
-		Rules: []*entities.Rule{
-			{
-				When: &entities.When{
-					Type: "attack",
-					Source: &entities.EntitySelector{
-						Type:  "tag",
-						Value: "player",
+		Rules: map[string][]*entities.Rule{
+			"attack": {
+				{
+					When: []entities.Condition{
+						&conditions.HasTag{
+							EventRole: entities.EventRoleSource,
+							Tag:       "player",
+						},
 					},
-				},
-				Then: []entities.Action{
-					&actions.Print{
-						EventRole: actions.EventRoleSource,
-						Text:      "You beat a great big indent into {target}'s head",
-					},
-					&actions.Print{
-						EventRole: actions.EventRoleTarget,
-						Text:      "{source} caves your head in.",
+					Then: []entities.Action{
+						&actions.Print{
+							EventRole: entities.EventRoleSource,
+							Text:      "You beat a great big indent into {target}'s head",
+						},
+						&actions.Print{
+							EventRole: entities.EventRoleTarget,
+							Text:      "{source} caves your head in.",
+						},
 					},
 				},
 			},
@@ -203,6 +205,7 @@ func (p *Player) Kiss(alias string) (string, error) {
 
 	return message, nil
 }
+
 func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) {
 	target, err := p.getEntityByAlias(alias)
 	if err != nil {

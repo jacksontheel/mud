@@ -7,7 +7,7 @@ import (
 )
 
 type Eventful struct {
-	Rules []*entities.Rule
+	Rules map[string][]*entities.Rule
 }
 
 var _ entities.Component = &Eventful{}
@@ -23,7 +23,7 @@ func (e *Eventful) Copy() entities.Component {
 }
 
 func (c *Eventful) OnEvent(ev *entities.Event) (bool, error) {
-	for _, r := range c.Rules {
+	for _, r := range c.Rules[ev.Type] {
 		match, err := matchWhen(r.When, ev)
 		if err != nil {
 			return false, err
@@ -42,52 +42,21 @@ func (c *Eventful) OnEvent(ev *entities.Event) (bool, error) {
 	return false, nil
 }
 
-func (c *Eventful) AddRule(rule *entities.Rule) {
-	c.Rules = append(c.Rules, rule)
+func (c *Eventful) AddRule(eventType string, rule *entities.Rule) {
+	c.Rules[eventType] = append(c.Rules[eventType], rule)
 }
 
-func matchWhen(w *entities.When, ev *entities.Event) (bool, error) {
+func matchWhen(conditions []entities.Condition, ev *entities.Event) (bool, error) {
+	ret := true
 
-	sourceMatch, err := matchEntityToSelector(w.Source, ev.Source, ev.Target)
-	if err != nil {
-		return false, err
-	}
-
-	instrumentMatch, err := matchEntityToSelector(w.Instrument, ev.Instrument, ev.Target)
-	if err != nil {
-		return false, err
-	}
-
-	return w.Type == ev.Type && sourceMatch && instrumentMatch, nil
-}
-
-func matchEntityToSelector(selector *entities.EntitySelector, target, listener *entities.Entity) (bool, error) {
-	// if there is no selector for target
-	// default true
-	if selector == nil {
-		return true, nil
-	}
-
-	// if there is a selector for target
-	// but target entity is nil
-	// e.g. source selector with no event source
-	// default false
-	if target == nil {
-		return false, nil
-	}
-
-	switch selector.Type {
-	case "self":
-		return target == listener, nil
-	case "tag":
-		for _, t := range target.Tags {
-			if selector.Value == t {
-				return true, nil
-			}
+	for _, c := range conditions {
+		check, err := c.Check(ev)
+		if err != nil {
+			return false, fmt.Errorf("error checking conditions: %w", err)
 		}
-	default:
-		return false, nil
+
+		ret = ret && check
 	}
 
-	return false, nil
+	return ret, nil
 }
