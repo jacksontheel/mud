@@ -1,4 +1,6 @@
-package actions
+package entities
+
+import "fmt"
 
 type EventRole int
 
@@ -18,18 +20,18 @@ const (
 	EventRoleRoomString       = "room"
 )
 
-func StringToEventRole(s string) EventRole {
+func ParseEventRole(s string) (EventRole, error) {
 	switch s {
 	case EventRoleSourceString:
-		return EventRoleSource
+		return EventRoleSource, nil
 	case EventRoleInstrumentString:
-		return EventRoleInstrument
+		return EventRoleInstrument, nil
 	case EventRoleTargetString:
-		return EventRoleTarget
+		return EventRoleTarget, nil
 	case EventRoleRoomString:
-		return EventRoleRoom
+		return EventRoleRoom, nil
 	default:
-		return EventRoleUnknown
+		return EventRoleUnknown, fmt.Errorf("unknown event role '%s'", s)
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 
 type Copy struct {
 	EntityId      string
-	EventRole     EventRole
+	EventRole     entities.EventRole
 	ComponentType entities.ComponentType
 }
 
@@ -25,13 +25,13 @@ func (c *Copy) Execute(ev *entities.Event) error {
 
 	var recipient *entities.Entity
 	switch c.EventRole {
-	case EventRoleSource:
+	case entities.EventRoleSource:
 		recipient = ev.Source
-	case EventRoleInstrument:
+	case entities.EventRoleInstrument:
 		recipient = ev.Instrument
-	case EventRoleTarget:
+	case entities.EventRoleTarget:
 		recipient = ev.Target
-	case EventRoleRoom:
+	case entities.EventRoleRoom:
 		recipient = ev.Room
 	default:
 		return fmt.Errorf("invalid role '%s' for copy action", c.EventRole.String())
