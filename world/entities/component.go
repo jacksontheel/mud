@@ -64,4 +64,5 @@ type IChildren interface {
 	RemoveChild(child *Entity)
 	GetChildren() []*Entity
 	GetChildByAlias(alias string) (*Entity, bool)
+	HasChild(e *Entity) bool
 }

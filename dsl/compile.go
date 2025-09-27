@@ -413,6 +413,27 @@ func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 			EventRole1: role1,
 			EventRole2: role2,
 		}
+	} else if def.HasChildCondition != nil {
+		parentRole, err := entities.ParseEventRole(def.HasChildCondition.ParentRole)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+
+		component, err := entities.ParseComponentType(def.HasChildCondition.Component)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+
+		childRole, err := entities.ParseEventRole(def.HasChildCondition.ChildRole)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+
+		newCondition = &conditions.HasChild{
+			ParentRole:    parentRole,
+			ComponentType: component,
+			ChildRole:     childRole,
+		}
 	} else {
 		return nil, fmt.Errorf("action in when is empty")
 	}

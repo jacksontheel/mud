@@ -52,3 +52,9 @@ func (c *Children) GetChildByAlias(alias string) (*entities.Entity, bool) {
 	child, ok := c.childByAlias[alias]
 	return child, ok
 }
+
+func (c *Children) HasChild(e *entities.Entity) bool {
+	_, ok := c.aliasesByChild[e]
+
+	return ok
+}
