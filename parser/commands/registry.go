@@ -34,6 +34,13 @@ var Patterns = []models.Pattern{}
 
 func init() {
 	addCommandDefinition(attackCommand)
+	addCommandDefinition(inventoryCommand)
+	addCommandDefinition(kissCommand)
+	addCommandDefinition(lookCommand)
+	addCommandDefinition(moveCommand)
+	addCommandDefinition(sayCommand)
+	addCommandDefinition(takeCommand)
+	addCommandDefinition(whisperCommand)
 }
 
 func addCommandDefinition(cd CommandDefinition) error {
@@ -51,9 +58,7 @@ func addCommandDefinition(cd CommandDefinition) error {
 	}
 
 	// add patterns to patterns
-	for _, p := range cd.Pattern {
-		Patterns = append(Patterns, p)
-	}
+	Patterns = append(Patterns, cd.Pattern...)
 
 	return nil
 }

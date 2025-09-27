@@ -58,6 +58,23 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 		return "What in the nine hells?", nil
 	}
 
+	switch cmd.Kind {
+	case "move":
+		return player.Move(cmd.Params["direction"])
+	case "look":
+		return player.Look(cmd.Params["target"])
+	case "say":
+		return player.Say(cmd.Params["message"]), nil
+	case "whisper":
+		return player.Whisper(cmd.Params["target"], cmd.Params["message"])
+	case "inventory":
+		return player.Inventory()
+	case "attack":
+		return player.Attack(cmd.Params["target"], cmd.Params["instrument"])
+	case "kiss":
+		return player.Kiss(cmd.Params["target"])
+	}
+
 	// see if it has target
 	if target := cmd.Params["target"]; target != "" {
 		if instrument := cmd.Params["instrument"]; instrument != "" {
