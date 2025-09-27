@@ -58,7 +58,7 @@ entity Lamp {
 }
 
 entity BedRoom {
-    name is "Bed Room"
+    name is "Bedroom"
     description is "A fun little bedroom."
     aliases is ["room"]
     tags is ["room"]
@@ -117,10 +117,17 @@ entity Goblin {
     }
 
     react kiss {
-        then {
+        when {
+            not source Inventory has child target
+        } then {
             print source "You give the goblin a kiss upon his {'sweaty' | blue} brow, and he {'hops' | italic} into your pocket."
             publish "{source} gives the goblin a {'kiss' | bold | red}, before the goblin {'jumps' | italic} into {source}'s pocket."
             move target to source Inventory
+        }
+
+        then {
+            print source "You look into your pocket and plant another kiss upon the goblin's cheek."
+            publish "{source} gives the goblin in their pocket a big wet {'kiss' | bold | red}."
         }
     }
 }

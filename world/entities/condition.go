@@ -7,6 +7,7 @@ const (
 	ConditionNot
 	ConditionIsPresent
 	ConditionEventRolesEqual
+	ConditionHasChild
 )
 
 type Condition interface {
