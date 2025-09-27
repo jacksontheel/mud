@@ -3,6 +3,7 @@ package actions
 import (
 	"fmt"
 
+	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 )
 
@@ -21,7 +22,7 @@ func (p *Publish) Execute(ev *entities.Event) error {
 		return fmt.Errorf("publisher in event may not be nil for publish action")
 	}
 
-	message, err := formatText(p.Text, ev)
+	message, err := utils.FormatText(p.Text, fillFormatMap(ev))
 	if err != nil {
 		return err
 	}
