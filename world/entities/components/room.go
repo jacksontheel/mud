@@ -48,13 +48,13 @@ func (r *Room) GetNeighboringRoomId(direction string) (string, bool) {
 
 func (r *Room) GetExitText() string {
 	var b strings.Builder
-	b.WriteString("Exits: [")
+	b.WriteString("Exits: ")
 
 	for exit := range r.exits {
 		b.WriteString(exit)
 		b.WriteString(", ")
 	}
 
-	result := strings.TrimSuffix(b.String(), ", ") + "]"
+	result := strings.TrimSuffix(b.String(), ", ")
 	return result
 }
