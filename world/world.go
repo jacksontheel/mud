@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"example.com/mud/commands"
 	"example.com/mud/parser"
 	"example.com/mud/utils"
 	"example.com/mud/world/entities"
@@ -53,33 +52,41 @@ func (w *World) Publish(player *Player, message string) {
 	w.bus.Publish(player.currentRoom, message, []*entities.Entity{player.entity})
 }
 
-// TODO: move command behavior to the command file? Currently being handled between player.go and world.go
 func (w *World) Parse(player *Player, line string) (string, error) {
 	cmd := parser.Parse(line)
-	switch cmd.Kind {
-	case commands.CommandMove:
-		message, err := player.Move(cmd.Params["direction"])
-		return message, err
-	case commands.CommandLook:
-		message, err := player.Look(cmd.Params["target"])
-		return message, err
-	case commands.CommandInventory:
-		message, err := player.Inventory()
-		return message, err
-	case commands.CommandAttack:
-		message, err := player.Attack(cmd.Params["target"], cmd.Params["instrument"])
-		return message, err
-	case commands.CommandKiss:
-		message, err := player.Kiss(cmd.Params["target"])
-		return message, err
-	case commands.CommandSay:
-		return player.Say(cmd.Params["message"]), nil
-	case commands.CommandWhisper:
-		message, err := player.Whisper(cmd.Params["target"], cmd.Params["message"])
-		return message, err
-	default:
-		return "I don't understand that.", nil
+	if cmd == nil {
+		return "What in the nine hells?", nil
 	}
+
+	switch cmd.Kind {
+	case "move":
+		return player.Move(cmd.Params["direction"])
+	case "look":
+		return player.Look(cmd.Params["target"])
+	case "say":
+		return player.Say(cmd.Params["message"]), nil
+	case "whisper":
+		return player.Whisper(cmd.Params["target"], cmd.Params["message"])
+	case "inventory":
+		return player.Inventory()
+	case "attack":
+		return player.Attack(cmd.Params["target"], cmd.Params["instrument"])
+	case "kiss":
+		return player.Kiss(cmd.Params["target"])
+	}
+
+	// see if it has target
+	if target := cmd.Params["target"]; target != "" {
+		if instrument := cmd.Params["instrument"]; instrument != "" {
+			response, err := player.actUponWith(cmd.Kind, target, instrument, cmd.NoMatchMessage)
+			return response, err
+		} else {
+			response, err := player.actUpon(cmd.Kind, target, cmd.NoMatchMessage)
+			return response, err
+		}
+	}
+
+	return "What the hell are you talking about?", nil
 }
 
 func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entities.Entity {

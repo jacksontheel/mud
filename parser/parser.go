@@ -3,8 +3,8 @@ package parser
 import (
 	"strings"
 
-	"example.com/mud/commands"
 	"example.com/mud/models"
+	"example.com/mud/parser/commands"
 )
 
 // TODO: register multi-word merges at the command level instead of in parser
@@ -12,12 +12,6 @@ var multiWordVerbMerges = [][]string{
 	{"pick", "up"},
 	{"make", "out"},
 }
-
-var directionAliases = commands.DirectionAliases()
-
-var verbAliases = commands.AllAliases()
-
-var patterns = commands.AllPatterns()
 
 func tokenize(input string) []string {
 	s := strings.ToLower(strings.TrimSpace(input))
@@ -28,7 +22,7 @@ func tokenize(input string) []string {
 
 	// normalize verb aliases
 	if len(parts) > 0 {
-		if base, ok := verbAliases[parts[0]]; ok {
+		if base, ok := commands.VerbAliases[parts[0]]; ok {
 			parts[0] = base
 		}
 	}
@@ -78,8 +72,8 @@ func mergeSequences(tokens []string, merges [][]string) []string {
 	return out
 }
 
-func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]string) {
-	params = map[string]string{}
+func tryMatch(p models.Pattern, tokens []string) (*commands.Command, bool) {
+	params := map[string]string{}
 	ti := 0
 	for pi := 0; pi < len(p.Tokens); pi++ {
 		pt := p.Tokens[pi]
@@ -87,10 +81,10 @@ func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]str
 		// if pattern expects a Literal, e.g. "take"
 		if pt.Literal != "" {
 			if ti >= len(tokens) {
-				return false, nil
+				return nil, false
 			}
 			if tokens[ti] != pt.Literal {
-				return false, nil
+				return nil, false
 			}
 			ti++
 			continue
@@ -99,12 +93,12 @@ func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]str
 		// if pattern expects slot to be the remaining tokens, e.g. "take big orange key"
 		if pt.SlotIsRest {
 			if ti > len(tokens) {
-				return false, nil
+				return nil, false
 			}
 			rest := tokens[ti:]
-			val, ok := validateSlot(pt.SlotType, rest)
+			val, ok := validateSlot(pt.SlotName, rest)
 			if !ok {
-				return false, nil
+				return nil, false
 			}
 			params[pt.SlotName] = val
 			ti = len(tokens)
@@ -113,11 +107,11 @@ func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]str
 
 		// consume the next single token
 		if ti >= len(tokens) {
-			return false, nil
+			return nil, false
 		}
-		val, ok := validateSlot(pt.SlotType, []string{tokens[ti]})
+		val, ok := validateSlot(pt.SlotName, []string{tokens[ti]})
 		if !ok {
-			return false, nil
+			return nil, false
 		}
 		params[pt.SlotName] = val
 		ti++
@@ -125,10 +119,14 @@ func tryMatch(p models.Pattern, tokens []string) (ok bool, params map[string]str
 
 	// must consume all tokens
 	if ti != len(tokens) {
-		return false, nil
+		return nil, false
 	}
 
-	return true, params
+	return &commands.Command{
+		Kind:           p.Kind,
+		Params:         params,
+		NoMatchMessage: p.NoMatchMessage,
+	}, true
 }
 
 func validateSlot(SlotType string, toks []string) (string, bool) {
@@ -138,7 +136,7 @@ func validateSlot(SlotType string, toks []string) (string, bool) {
 			return "", false
 		}
 
-		if canon, ok := directionAliases[toks[0]]; ok {
+		if canon, ok := commands.DirectionAliases[toks[0]]; ok {
 			return canon, true
 		}
 
@@ -151,17 +149,17 @@ func validateSlot(SlotType string, toks []string) (string, bool) {
 	}
 }
 
-func Parse(input string) commands.Command {
+func Parse(input string) *commands.Command {
 	toks := tokenize(input)
 	if len(toks) == 0 {
-		return commands.Command{Kind: "", Params: nil}
+		return nil
 	}
 
-	for _, p := range patterns {
-		if ok, params := tryMatch(p, toks); ok {
-			return commands.Command{Kind: p.Kind, Params: params}
+	for _, p := range commands.Patterns {
+		if cmd, ok := tryMatch(p, toks); ok {
+			return cmd
 		}
 	}
 
-	return commands.Command{Kind: "", Params: nil}
+	return nil
 }
