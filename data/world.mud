@@ -1,6 +1,6 @@
 entity LivingRoom {
     name is "Living Room"
-    description is "This is a perfectly nice living room."
+    description is "A perfectly nice living room, clean and orderly with a quiet sense of comfort."
     aliases is ["room"]
     tags is ["room"]
 
@@ -19,7 +19,7 @@ entity LivingRoom {
 
 entity Couch {
     name is "Couch"
-    description is "This is a comfy couch."
+    description is "A soft, inviting {'couch' | bold | yellow} rests here, its cushions sagged just enough to suggest long use. It seems comfortable, with plenty of room for something to be hidden within."
     aliases is ["couch"]
     tags is ["furniture"]
 
@@ -34,8 +34,8 @@ entity Couch {
         }
 
         then {
-            print source "As you beat upon the couch, a nickel falls out."
-            publish "{source} beats upon the couch, and a shining nickel falls out from under a cushion."
+            print source "As you beat upon the couch, a {'nickel' | bold | yellow} falls out."
+            publish "{source} beats upon the couch, and a shining {'nickel'| bold | yellow} falls out from under a cushion."
             copy "Nickel" to room Room
         }
     }
@@ -43,14 +43,14 @@ entity Couch {
 
 entity Nickel {
     name is "Nickel"
-    description is "A shining nickel, Thomas Jefferson smiles at you from his handsome side profile."
+    description is "A shining {'nickel' | bold | yellow} lies here, Thomas Jefferson’s handsome side profile glinting faintly as though pleased with its escape."
     aliases is ["nickel"]
     tags is ["item"]
 }
 
 entity Lamp {
     name is "Lamp"
-    description is "A dimly lit lamp sits in the corner."
+    description is "A dimly lit {'lamp' | bold | yellow} stands quietly in the corner, its weak glow casting just enough light to soften the edges of the room."
     aliases is ["lamp"]
     tags is ["furniture"]
 }
@@ -75,7 +75,7 @@ entity BedRoom {
 
 entity Bed {
     name is "Bed"
-    description is "A bed is well-made and looks inviting."
+    description is "A {'bed' | bold | yellow} is well-made and looks inviting."
     aliases is ["bed"]
     tags is ["furniture"]
 
@@ -103,21 +103,21 @@ entity Bathroom {
 
 entity Goblin {
     name is "Goblin"
-    description is "A funny goblin man no bigger than your fist smiles warmly."
+    description is "A funny {'goblin' | bold | yellow} man no bigger than your fist smiles warmly."
     aliases is ["goblin", "man"]
     tags is ["npc"]
 
     react attack {
         then {
-            print source "You pummel the goblin as he whines helplessly"
-            publish "{source} punches and kicks the helpless goblin in his head."
+            print source "As you throw a {'punch' | yellow} at the goblin, he jumps around you, {'kissing' | red} your forehead."
+            publish "{source} tries and fails to attack the goblin, yet they're rewarded with a gentle {'kiss' | red } from the creature."
         }
     }
 
     react kiss {
         then {
-            print source "You give the goblin a kiss upon his sweaty brow, and he hops into your pocket."
-            publish "{source} gives the goblin a kiss, before the goblin jumps into {source}'s pocket."
+            print source "You give the goblin a kiss upon his {'sweaty' | blue} brow, and he {'hops' | italic} into your pocket."
+            publish "{source} gives the goblin a {'kiss' | bold | red}, before the goblin {'jumps' | italic} into {source}'s pocket."
             move target to source Inventory
         }
     }
@@ -125,9 +125,13 @@ entity Goblin {
 
 entity Toilet {
     name is "Toilet"
-    description is "A toilet, you piss and poop in here."
+    description is "A {'toilet' | bold | yellow}, you piss and poop in here."
     aliases is ["toilet"]
     tags is ["furniture"]
 
-    trait Standard
+    react kiss {
+        then {
+            print source "Maybe... no. You reconsider. {'Do not kiss the toilet.' | bold | underline }"
+        }
+    }
 }

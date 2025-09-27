@@ -70,7 +70,7 @@ func createEgg(parent entities.ComponentWithChildren) *entities.Entity {
 		"A bulbous, green-speckled egg.",
 		[]string{"egg"},
 		[]string{"egg"},
-		nil,
+		parent,
 	)
 
 	return egg
@@ -126,7 +126,8 @@ func (p *Player) Look(alias string) (string, error) {
 	}
 
 	if target != nil {
-		return target.Description, nil
+		description, err := target.GetDescription()
+		return description, err
 	}
 
 	return "You must be going mad. That's not here.", nil

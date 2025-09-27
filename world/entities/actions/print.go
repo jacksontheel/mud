@@ -2,8 +2,8 @@ package actions
 
 import (
 	"fmt"
-	"strings"
 
+	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 )
 
@@ -35,7 +35,7 @@ func (p *Print) Execute(ev *entities.Event) error {
 		return fmt.Errorf("invalid role '%s' for print action", p.EventRole.String())
 	}
 
-	message, err := formatText(p.Text, ev)
+	message, err := utils.FormatText(p.Text, fillFormatMap(ev))
 	if err != nil {
 		return err
 	}
@@ -45,20 +45,18 @@ func (p *Print) Execute(ev *entities.Event) error {
 	return nil
 }
 
-// eventually this could be its own package, handling text colors, etc
-// for now it just does some simple replacements.
-func formatText(s string, ev *entities.Event) (string, error) {
+func fillFormatMap(ev *entities.Event) map[string]string {
+	out := make(map[string]string, 3)
+
 	if ev.Source != nil {
-		s = strings.ReplaceAll(s, "{source}", ev.Source.Name)
+		out[entities.EventRoleSource.String()] = ev.Source.Name
 	}
-
 	if ev.Instrument != nil {
-		s = strings.ReplaceAll(s, "{instrument}", ev.Instrument.Name)
+		out[entities.EventRoleInstrument.String()] = ev.Instrument.Name
 	}
-
 	if ev.Target != nil {
-		s = strings.ReplaceAll(s, "{target}", ev.Target.Name)
+		out[entities.EventRoleTarget.String()] = ev.Target.Name
 	}
 
-	return s, nil
+	return out
 }

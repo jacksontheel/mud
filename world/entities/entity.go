@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+
+	"example.com/mud/utils"
 )
 
 type Entity struct {
@@ -67,6 +69,15 @@ func (e *Entity) RequireComponentWithChildren(ct ComponentType) (ComponentWithCh
 	}
 
 	return c, nil
+}
+
+func (e *Entity) GetDescription() (string, error) {
+	formatted, err := utils.FormatText(e.Description, map[string]string{})
+	if err != nil {
+		return "", fmt.Errorf("could not format description for entity '%s': %w", e.Name, err)
+	}
+
+	return formatted, nil
 }
 
 func GetComponent[C Component](e *Entity) (C, bool) {

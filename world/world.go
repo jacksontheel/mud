@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"example.com/mud/parser"
+	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 )
@@ -87,19 +88,33 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 		return "", err
 	}
 
+	formattedTitle, err := utils.FormatText(fmt.Sprintf("{'%s' | bold | red}", r.Name), map[string]string{})
+	if err != nil {
+		return "", fmt.Errorf("could not format room '%s' name: %w", r.Name, err)
+	}
+
+	b.WriteString(formattedTitle)
+	b.WriteString("\n")
+
 	roomDescription := strings.TrimSpace(r.Description)
 	b.WriteString(roomDescription)
-	b.WriteString("\n")
+	b.WriteString(" ")
 
 	for _, e := range room.GetChildren().GetChildren() {
 		if e == exclude {
 			continue
 		}
 
-		b.WriteString(e.Description)
-		b.WriteString("\n")
+		description, err := e.GetDescription()
+		if err != nil {
+			return "", err
+		}
+
+		b.WriteString(description)
+		b.WriteString(" ")
 	}
 
+	b.WriteString("\n")
 	b.WriteString(room.GetExitText())
 	return b.String(), nil
 }
