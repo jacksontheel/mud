@@ -1,0 +1,82 @@
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      RELEASE_DIR: release-${{ github.sha }}
+      REMOTE_APP_DIR: /opt/mud
+      REMOTE_RELEASES: /opt/mud/releases
+      REMOTE_CURRENT: /opt/mud/current
+      SERVICE_NAME: mud-server.service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.4'
+
+      - name: Build server
+        run: |
+          mkdir -p ${{ env.RELEASE_DIR }}
+          go build -o ${{ env.RELEASE_DIR }}/mud-server
+
+      - name: Bundle data into release
+        run: |
+          mkdir -p ${{ env.RELEASE_DIR }}/data
+          # copy everything you want packaged with the release
+          cp -r data/* ${{ env.RELEASE_DIR }}/data/ || true
+
+      - name: Upload release to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: ${{ env.RELEASE_DIR }}
+          target: ${{ env.REMOTE_RELEASES }}
+
+      - name: Activate release & restart service
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            RELEASE_PATH="${{ env.REMOTE_RELEASES }}/${{ env.RELEASE_DIR }}"
+            CURRENT_LINK="${{ env.REMOTE_CURRENT }}"
+            APP_DIR="${{ env.REMOTE_APP_DIR }}"
+            SERVICE="${{ env.SERVICE_NAME }}"
+
+            # Ensure base dirs exist & ownership
+            sudo mkdir -p "${APP_DIR}" "${{ env.REMOTE_RELEASES }}"
+            sudo chown -R mud:mud "${APP_DIR}"
+            sudo chown -R mud:mud "${RELEASE_PATH}"
+
+            # Atomically switch current -> new release
+            if [ -L "${CURRENT_LINK}" ] || [ -e "${CURRENT_LINK}" ]; then
+              sudo rm -f "${CURRENT_LINK}"
+            fi
+            sudo ln -s "${RELEASE_PATH}" "${CURRENT_LINK}"
+
+            # Make sure binary is executable
+            sudo chmod +x "${CURRENT_LINK}/mud-server"
+
+            # Restart service
+            sudo systemctl daemon-reload
+            sudo systemctl restart "${SERVICE}"
+            sudo systemctl --no-pager -l status "${SERVICE}" || true

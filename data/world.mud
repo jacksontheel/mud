@@ -1,6 +1,6 @@
 entity LivingRoom {
     name is "Living Room"
-    description is "A perfectly nice living room, clean and orderly with a quiet sense of comfort."
+    description is "A welcoming and warm living room, clean and orderly with a quiet sense of comfort."
     aliases is ["room"]
     tags is ["room"]
 
