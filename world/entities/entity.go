@@ -16,22 +16,24 @@ type Entity struct {
 	Description string
 	Aliases     []string
 	Tags        []string
+	Fields      map[string]any
 	Parent      ComponentWithChildren
 }
 
-func NewEntity(name string, description string, aliases []string, tags []string, parent ComponentWithChildren) *Entity {
+func NewEntity(name string, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
 	return &Entity{
 		components:  map[reflect.Type]Component{},
 		Name:        name,
 		Description: description,
 		Aliases:     aliases,
 		Tags:        tags,
+		Fields:      fields,
 		Parent:      parent,
 	}
 }
 
 func (e *Entity) Copy(parent ComponentWithChildren) *Entity {
-	newEntity := NewEntity(e.Name, e.Description, e.Aliases, e.Tags, parent)
+	newEntity := NewEntity(e.Name, e.Description, e.Aliases, e.Tags, e.Fields, parent)
 	for _, c := range e.components {
 		newEntity.Add(c.Copy())
 	}

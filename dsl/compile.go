@@ -23,6 +23,7 @@ type LoweredEntity struct {
 	tags           []string
 	aliases        []string
 	components     []entities.Component
+	fields         map[string]any
 	rulesByCommand map[string][]*entities.Rule
 }
 
@@ -134,6 +135,7 @@ func (ep *entityPrototypes) buildPrototype(id string, blocks []*ast.EntityBlock)
 		loweredEntity.description,
 		loweredEntity.aliases,
 		loweredEntity.tags,
+		loweredEntity.fields,
 		nil,
 	)
 
@@ -196,6 +198,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	var description string
 	var aliases []string
 	var tags []string
+	fields := make(map[string]any)
 
 	components := make([]entities.Component, 0, len(blocks))
 	rulesByCommand := make(map[string][]*entities.Rule, len(blocks))
@@ -244,7 +247,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			case "tags":
 				tags = f.Value.Strings
 			default:
-				return nil, fmt.Errorf("unknown field %s", f.Key)
+				fields[f.Key] = f.Value.Parse()
 			}
 		} else {
 			return nil, fmt.Errorf("could not expand empty entity block")
@@ -271,6 +274,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 		tags:           tags,
 		aliases:        aliases,
 		components:     components,
+		fields:         fields,
 		rulesByCommand: rulesByCommand,
 	}, nil
 }
@@ -426,6 +430,17 @@ func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 			EventRole1: role1,
 			EventRole2: role2,
 		}
+	} else if def.VariableEqualsCondition != nil {
+		role, err := entities.ParseEventRole(def.VariableEqualsCondition.Role)
+		if err != nil {
+			return nil, fmt.Errorf("event roles equal condition: %w", err)
+		}
+
+		newCondition = &conditions.FieldEquals{
+			Role:  role,
+			Field: def.VariableEqualsCondition.Field,
+			Value: def.VariableEqualsCondition.Value.Parse(),
+		}
 	} else if def.HasChildCondition != nil {
 		parentRole, err := entities.ParseEventRole(def.HasChildCondition.ParentRole)
 		if err != nil {
@@ -448,7 +463,7 @@ func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 			ChildRole:     childRole,
 		}
 	} else {
-		return nil, fmt.Errorf("action in when is empty")
+		return nil, fmt.Errorf("condition in when is empty")
 	}
 
 	return newCondition, nil
@@ -510,6 +525,17 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 				RoleOrigin:      roleOrigin,
 				RoleDestination: roleDestination,
 				ComponentType:   component,
+			}
+		} else if aDef.SetField != nil {
+			role, err := entities.ParseEventRole(aDef.SetField.Role)
+			if err != nil {
+				return nil, fmt.Errorf("event roles equal condition: %w", err)
+			}
+
+			newAction = &actions.SetField{
+				Role:  role,
+				Field: aDef.SetField.Field,
+				Value: aDef.SetField.Value.Parse(),
 			}
 		} else {
 			return nil, fmt.Errorf("action in then is empty")

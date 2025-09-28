@@ -5,6 +5,7 @@ type ConditionDef struct {
 	HasTag                   *HasTagCondition          `| @@`
 	IsPresent                *IsPresentCondition       `| @@`
 	EventRolesEqualCondition *EventRolesEqualCondition `| @@`
+	VariableEqualsCondition  *FieldEqualsCondition     `| @@`
 	HasChildCondition        *HasChildCondition        `| @@`
 }
 
@@ -24,6 +25,12 @@ type IsPresentCondition struct {
 type EventRolesEqualCondition struct {
 	Role1 string `@Ident`
 	Role2 string `"is" @Ident`
+}
+
+type FieldEqualsCondition struct {
+	Role  string  `@Ident`
+	Field string  `"." @Ident`
+	Value Literal `"is" @@`
 }
 
 type HasChildCondition struct {
