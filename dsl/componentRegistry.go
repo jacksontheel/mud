@@ -18,6 +18,7 @@ func registerComponentBuilder(name string, b componentBuilder) {
 
 func init() {
 	registerComponentBuilder("Room", buildRoom)
+	registerComponentBuilder("Inventory", buildInventory)
 }
 
 func processComponentPrototype(def *ast.ComponentDef) (entities.Component, error) {
@@ -44,4 +45,9 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 		}
 	}
 	return rm, nil
+}
+
+func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
+	inventory := components.NewInventory()
+	return inventory, nil
 }

@@ -18,9 +18,11 @@ func (i *Inventory) Id() entities.ComponentType {
 }
 
 func (i *Inventory) Copy() entities.Component {
-	// right now copying inventories is not supported
-	// return a new empty inventory
-	return NewInventory()
+	inventory := NewInventory()
+	for _, child := range i.children.GetChildren() {
+		inventory.children.AddChild(child)
+	}
+	return i
 }
 
 func NewInventory() *Inventory {

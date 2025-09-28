@@ -7,7 +7,6 @@ type ComponentType int
 const (
 	ComponentUnknown ComponentType = iota
 	ComponentRoom
-	ComponentIdentity
 	ComponentEventful
 	ComponentInventory
 )
@@ -15,7 +14,6 @@ const (
 const (
 	ComponentUnknownString   = "Unknown"
 	ComponentRoomString      = "Room"
-	ComponentIdentityString  = "Identity"
 	ComponentEventfulString  = "Eventful"
 	ComponentInventoryString = "Inventory"
 )
@@ -24,8 +22,6 @@ func ParseComponentType(s string) (ComponentType, error) {
 	switch s {
 	case ComponentRoomString:
 		return ComponentRoom, nil
-	case ComponentIdentityString:
-		return ComponentIdentity, nil
 	case ComponentEventfulString:
 		return ComponentEventful, nil
 	case ComponentInventoryString:
@@ -39,8 +35,6 @@ func (ct ComponentType) String() string {
 	switch ct {
 	case ComponentRoom:
 		return ComponentRoomString
-	case ComponentIdentity:
-		return ComponentIdentityString
 	case ComponentEventful:
 		return ComponentEventfulString
 	case ComponentInventory:
