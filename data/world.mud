@@ -53,8 +53,6 @@ entity Lamp {
     description is "A dimly lit {'lamp' | bold | yellow} stands quietly in the corner, its weak glow casting just enough light to soften the edges of the room."
     aliases is ["lamp"]
     tags is ["furniture"]
-
-    trait Standard
 }
 
 entity BedRoom {
