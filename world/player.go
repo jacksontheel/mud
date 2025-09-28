@@ -210,12 +210,13 @@ func (p *Player) actUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 
 	if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
 		match, err := eventful.OnEvent(&entities.Event{
-			Type:       action,
-			Publisher:  p.world.bus,
-			Room:       p.currentRoom,
-			Source:     p.entity,
-			Instrument: instrument,
-			Target:     target,
+			Type:         action,
+			Publisher:    p.world.bus,
+			EntitiesById: p.world.EntitiesById(),
+			Room:         p.currentRoom,
+			Source:       p.entity,
+			Instrument:   instrument,
+			Target:       target,
 		})
 
 		if err != nil {

@@ -1,10 +1,11 @@
 package ast
 
 type ActionDef struct {
-	Print   *PrintAction   `  "print" @@`
-	Publish *PublishAction `| "publish" @@`
-	Copy    *CopyAction    `| "copy" @@`
-	Move    *MoveAction    `| "move" @@`
+	Print    *PrintAction    `  "print" @@`
+	Publish  *PublishAction  `| "publish" @@`
+	Copy     *CopyAction     `| "copy" @@`
+	Move     *MoveAction     `| "move" @@`
+	SetField *SetFieldAction `| "set" @@`
 }
 
 type PrintAction struct {
@@ -26,4 +27,10 @@ type MoveAction struct {
 	RoleOrigin      string ` @Ident`
 	RoleDestination string ` "to" @Ident`
 	Component       string `"." @Ident`
+}
+
+type SetFieldAction struct {
+	Role  string  `@Ident`
+	Field string  `"." @Ident`
+	Value Literal `"to" @@`
 }

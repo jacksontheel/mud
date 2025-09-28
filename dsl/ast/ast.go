@@ -5,7 +5,7 @@ import (
 )
 
 var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
-	{Name: "Presence", Pattern: `\b(?:anything|nothing)\b`},
+	{Name: "Bool", Pattern: `\b(?:true|false)\b`},
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},

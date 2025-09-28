@@ -7,6 +7,7 @@ const (
 	ActionPublish
 	ActionCopy
 	ActionMove
+	ActionSetField
 )
 
 type Action interface {

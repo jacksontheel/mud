@@ -43,4 +43,20 @@ entity Egg {
     description is "A bulbous, green-speckled egg."
     aliases is ["egg"]
     tags is ["egg"]
+
+    angry is false
+
+    react attack {
+        when {
+            target.angry is false
+        } then {
+            set target.angry to true
+            print source "The egg is now angry that you hit it."
+        }
+        
+        then {
+            set target.angry to false
+            print source "The egg is calmed after you strike it again"
+        }
+    }
 }
