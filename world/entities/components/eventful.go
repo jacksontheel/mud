@@ -56,6 +56,10 @@ func matchWhen(conditions []entities.Condition, ev *entities.Event) (bool, error
 		}
 
 		ret = ret && check
+
+		if !ret {
+			break
+		}
 	}
 
 	return ret, nil

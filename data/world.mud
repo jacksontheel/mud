@@ -36,7 +36,7 @@ entity Couch {
         then {
             print source "As you beat upon the couch, a {'nickel' | bold | yellow} falls out."
             publish "{source} beats upon the couch, and a shining {'nickel'| bold | yellow} falls out from under a cushion."
-            copy "Nickel" to room Room
+            copy "Nickel" to room.Room
         }
     }
 }
@@ -118,11 +118,11 @@ entity Goblin {
 
     react kiss {
         when {
-            not source Inventory has child target
+            not target in source.Inventory
         } then {
             print source "You give the goblin a kiss upon his {'sweaty' | blue} brow, and he {'hops' | italic} into your pocket."
             publish "{source} gives the goblin a {'kiss' | bold | red}, before the goblin {'jumps' | italic} into {source}'s pocket."
-            move target to source Inventory
+            move target to source.Inventory
         }
 
         then {

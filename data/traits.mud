@@ -15,7 +15,7 @@ trait Kissable {
 trait Hittable {
     react attack {
         when {
-            not not instrument is target
+            instrument is target
         } then {
             print source "You can't hit something with itself."
         }

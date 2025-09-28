@@ -10,6 +10,7 @@ var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
+	{Name: "Dot", Pattern: `\.`},
 	{Name: "LBrack", Pattern: `\[`},
 	{Name: "RBrack", Pattern: `\]`},
 	{Name: "Colon", Pattern: `:`},

@@ -19,11 +19,11 @@ type PublishAction struct {
 type CopyAction struct {
 	EntityId  string `@String`
 	Target    string `"to" @Ident `
-	Component string `@Ident`
+	Component string `"." @Ident`
 }
 
 type MoveAction struct {
 	RoleOrigin      string ` @Ident`
-	RoleDestination string ` "to" @Ident `
-	Component       string ` @Ident`
+	RoleDestination string ` "to" @Ident`
+	Component       string `"." @Ident`
 }

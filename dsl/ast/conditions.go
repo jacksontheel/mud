@@ -27,7 +27,7 @@ type EventRolesEqualCondition struct {
 }
 
 type HasChildCondition struct {
-	ParentRole string `@Ident`
-	Component  string `@Ident`
-	ChildRole  string `"has" "child" @Ident`
+	ChildRole  string `@Ident`
+	ParentRole string `"in" @Ident`
+	Component  string `"." @Ident`
 }
