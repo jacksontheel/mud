@@ -5,9 +5,7 @@ import (
 	"strings"
 
 	"example.com/mud/world/entities"
-	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
-	"example.com/mud/world/entities/conditions"
 )
 
 type Player struct {
@@ -18,42 +16,10 @@ type Player struct {
 }
 
 func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player {
-	playerEntity := entities.NewEntity(
-		name,
-		fmt.Sprintf("%s the brave hero is here.", name),
-		[]string{strings.ToLower(name)},
-		[]string{"player"},
-		nil,
-	)
-
-	inventory := components.NewInventory()
-	inventory.GetChildren().AddChild(createEgg(inventory))
-	playerEntity.Add(inventory)
-
-	playerEntity.Add(&components.Eventful{
-		Rules: map[string][]*entities.Rule{
-			"attack": {
-				{
-					When: []entities.Condition{
-						&conditions.HasTag{
-							EventRole: entities.EventRoleSource,
-							Tag:       "player",
-						},
-					},
-					Then: []entities.Action{
-						&actions.Print{
-							EventRole: entities.EventRoleSource,
-							Text:      "You beat a great big indent into {target}'s head",
-						},
-						&actions.Print{
-							EventRole: entities.EventRoleTarget,
-							Text:      "{source} caves your head in.",
-						},
-					},
-				},
-			},
-		},
-	})
+	playerEntity := world.entityMap["Player"].Copy(nil)
+	playerEntity.Name = name
+	playerEntity.Description = fmt.Sprintf("%s the brave hero is here.", name)
+	playerEntity.Aliases = []string{strings.ToLower(name)}
 
 	return &Player{
 		world:       world,
@@ -61,19 +27,6 @@ func NewPlayer(name string, world *World, currentRoom *entities.Entity) *Player 
 		entity:      playerEntity,
 		currentRoom: currentRoom,
 	}
-}
-
-// temporary function to test inventory
-func createEgg(parent entities.ComponentWithChildren) *entities.Entity {
-	egg := entities.NewEntity(
-		"Egg",
-		"A bulbous, green-speckled egg.",
-		[]string{"egg"},
-		[]string{"egg"},
-		parent,
-	)
-
-	return egg
 }
 
 func (p *Player) OpeningMessage() (string, error) {

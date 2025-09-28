@@ -231,12 +231,12 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			switch f.Key {
 			case "name":
 				if f.Value.String == nil {
-					return nil, fmt.Errorf("identity.name must be a string")
+					return nil, fmt.Errorf("name must be a string")
 				}
 				name = *f.Value.String
 			case "description":
 				if f.Value.String == nil {
-					return nil, fmt.Errorf("identity.description must be a string")
+					return nil, fmt.Errorf("description must be a string")
 				}
 				description = *f.Value.String
 			case "aliases":
@@ -244,7 +244,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			case "tags":
 				tags = f.Value.Strings
 			default:
-				return nil, fmt.Errorf("identity: unknown field %s", f.Key)
+				return nil, fmt.Errorf("unknown field %s", f.Key)
 			}
 		} else {
 			return nil, fmt.Errorf("could not expand empty entity block")
@@ -312,6 +312,19 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 					return nil, err
 				}
 				rm.GetChildren().AddChild(childInst)
+			}
+		}
+	}
+
+	if inventory, ok := entities.GetComponent[*components.Inventory](inst); ok {
+		slot := ep.childrenPlan[id][entities.ComponentInventory]
+		if len(slot) > 0 {
+			for _, childName := range slot {
+				childInst, err := ep.instantiate(childName, inventory)
+				if err != nil {
+					return nil, err
+				}
+				inventory.GetChildren().AddChild(childInst)
 			}
 		}
 	}
