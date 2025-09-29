@@ -5,18 +5,17 @@ import (
 )
 
 var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
+	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
 	{Name: "Bool", Pattern: `\b(?:true|false)\b`},
+	{Name: "Int", Pattern: `[-+]?[0-9]+`},
+
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},
-	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
-	{Name: "Dot", Pattern: `\.`},
-	{Name: "LBrack", Pattern: `\[`},
-	{Name: "RBrack", Pattern: `\]`},
-	{Name: "Colon", Pattern: `:`},
-	{Name: "Comma", Pattern: `,`},
-	{Name: "LBrace", Pattern: `{`},
-	{Name: "RBrace", Pattern: `}`},
+
+	{Name: "Op", Pattern: `==|!=|<=|>=|\|\||&&`},
+	{Name: "Punct", Pattern: `[\[\](){}.,=<>+\-*/!]|:`},
+
 	{Name: "Whitespace", Pattern: `[ \t\n\r]+`},
 })
 
