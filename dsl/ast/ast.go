@@ -9,7 +9,7 @@ var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "AtIdent", Pattern: `@[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Tag", Pattern: `#[a-zA-Z_][a-zA-Z0-9_]*`},
-	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
+	{Name: "String", Pattern: `"([^"\\\\]|\\\\.)*"`},
 	{Name: "Dot", Pattern: `\.`},
 	{Name: "LBrack", Pattern: `\[`},
 	{Name: "RBrack", Pattern: `\]`},
@@ -25,8 +25,9 @@ type DSL struct {
 }
 
 type TopLevel struct {
-	Entity *EntityDef `"entity" @@`
-	Trait  *TraitDef  `| "trait" @@`
+	Entity  *EntityDef  `"entity" @@`
+	Trait   *TraitDef   `| "trait" @@`
+	Command *CommandDef `| "command" @@`
 }
 
 type EntityDef struct {
@@ -81,4 +82,15 @@ type FieldDef struct {
 type KV struct {
 	Key   string `@String`
 	Value string `":" @String`
+}
+
+type CommandDef struct {
+	Name   string          `@Ident`
+	Fields []*FieldDef     `"{" { @@ }"`
+	Blocks []*CommandBlock `{ @@ } "}"`
+}
+
+type CommandBlock struct {
+	Slots  []string    `"[" [ @Ident { "," @Ident } ] "]"`
+	Fields []*FieldDef `"{" { @@ } "}"`
 }

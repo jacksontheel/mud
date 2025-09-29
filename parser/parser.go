@@ -72,7 +72,7 @@ func mergeSequences(tokens []string, merges [][]string) []string {
 	return out
 }
 
-func tryMatch(p models.Pattern, tokens []string) (*commands.Command, bool) {
+func tryMatch(p models.Pattern, tokens []string) (*models.Command, bool) {
 	params := map[string]string{}
 	ti := 0
 	for pi := 0; pi < len(p.Tokens); pi++ {
@@ -122,7 +122,7 @@ func tryMatch(p models.Pattern, tokens []string) (*commands.Command, bool) {
 		return nil, false
 	}
 
-	return &commands.Command{
+	return &models.Command{
 		Kind:           p.Kind,
 		Params:         params,
 		NoMatchMessage: p.NoMatchMessage,
@@ -149,7 +149,7 @@ func validateSlot(SlotType string, toks []string) (string, bool) {
 	}
 }
 
-func Parse(input string) *commands.Command {
+func Parse(input string) *models.Command {
 	toks := tokenize(input)
 	if len(toks) == 0 {
 		return nil

@@ -2,8 +2,10 @@ package dsl
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/mud/dsl/ast"
+	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
@@ -13,6 +15,7 @@ import (
 type collectedDefs struct {
 	entitiesById map[string]*ast.EntityDef
 	traitsById   map[string]*ast.TraitDef
+	commandsById map[string]*ast.CommandDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
@@ -40,27 +43,32 @@ type entityPrototypes struct {
 	visiting       map[string]struct{}
 }
 
-func Compile(ast *ast.DSL) (map[string]*entities.Entity, error) {
+func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
 	if ast == nil {
-		return nil, fmt.Errorf("nil DSL")
+		return nil, nil, fmt.Errorf("nil DSL")
 	}
 
 	collectedDefs, err := collectDefs(ast.Declarations)
 	if err != nil {
-		return nil, fmt.Errorf("could not collect top level declarations: %w", err)
+		return nil, nil, fmt.Errorf("could not collect top level declarations: %w", err)
 	}
 
 	prototypes, err := collectedDefs.collectPrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not collect prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not collect prototype entities: %w", err)
 	}
 
 	entitiesById, err := prototypes.instantiatePrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
 	}
 
-	return entitiesById, nil
+	commands, err := collectedDefs.LowerCommands()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not lower commands: %w", err)
+	}
+
+	return entitiesById, commands, nil
 }
 
 // collect entity and trait definitions
@@ -277,6 +285,64 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 		fields:         fields,
 		rulesByCommand: rulesByCommand,
 	}, nil
+}
+
+func (c *collectedDefs) LowerCommands() ([]*models.CommandDefinition, error) {
+	var out []*models.CommandDefinition
+
+	for _, def := range c.commandsById {
+		cmd := &models.CommandDefinition{
+			Name:     def.Name,
+			Aliases:  nil,
+			Patterns: []models.CommandPattern{},
+		}
+
+		// Top-level fields like aliases
+		for _, f := range def.Fields {
+			if f.Key == "aliases" {
+				cmd.Aliases = f.Value.Strings
+			}
+		}
+
+		// Each pattern block
+		for _, block := range def.Blocks {
+			var syntax, noMatch string
+			for _, f := range block.Fields {
+				switch f.Key {
+				case "syntax":
+					syntax = f.Value.UnquotedString()
+				case "noMatch":
+					noMatch = f.Value.UnquotedString()
+				}
+			}
+
+			tokens := tokenizeCommandSyntax(syntax)
+			cmd.Patterns = append(cmd.Patterns, models.CommandPattern{
+				Slots:          block.Slots,
+				Tokens:         tokens,
+				NoMatchMessage: noMatch,
+			})
+		}
+
+		out = append(out, cmd)
+	}
+
+	return out, nil
+}
+
+func tokenizeCommandSyntax(s string) []models.PatToken {
+	var tokens []models.PatToken
+	parts := strings.Fields(s)
+
+	for _, part := range parts {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			slot := strings.Trim(part, "{}")
+			tokens = append(tokens, models.Slot(slot))
+		} else {
+			tokens = append(tokens, models.Lit(part))
+		}
+	}
+	return tokens
 }
 
 // loop through prototypes and instantiate them into a map of entities by name
