@@ -84,13 +84,26 @@ type KV struct {
 	Value string `":" @String`
 }
 
+// command Attack {
+//     aliases is ["attack", "hit", "beat"]
+
+//     [target] {
+//         syntax is "{command} {target}"
+//         noMatch is "blah blah blah"
+//     }
+// }
+
 type CommandDef struct {
 	Name   string          `@Ident`
-	Fields []*FieldDef     `"{" { @@ }"`
-	Blocks []*CommandBlock `{ @@ } "}"`
+	Blocks []*CommandBlock `"{" { @@ } "}"`
 }
 
 type CommandBlock struct {
-	Slots  []string    `"[" [ @Ident { "," @Ident } ] "]"`
+	Field                *FieldDef             `  @@`
+	CommandDefinitionDef *CommandDefinitionDef `| @@`
+}
+
+type CommandDefinitionDef struct {
+	Slots  []string    `"[" @Ident { "," @Ident } "]"`
 	Fields []*FieldDef `"{" { @@ } "}"`
 }

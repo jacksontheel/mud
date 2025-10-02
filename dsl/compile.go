@@ -74,6 +74,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 // collect entity and trait definitions
 func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	entitiesById := make(map[string]*ast.EntityDef, len(decls))
+	commandsById := make(map[string]*ast.CommandDef, len(decls))
 	traitsById := make(map[string]*ast.TraitDef, len(decls))
 
 	for _, declaration := range decls {
@@ -93,6 +94,12 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 			}
 
 			traitsById[declaration.Trait.Name] = declaration.Trait
+		} else if ec := declaration.Command; ec != nil {
+			if _, exists := commandsById[ec.Name]; exists {
+				return nil, fmt.Errorf("duplicate command %s", ec.Name)
+			}
+
+			commandsById[declaration.Command.Name] = declaration.Command
 		} else {
 			return nil, fmt.Errorf("declaration at top level is empty")
 		}
@@ -287,45 +294,60 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	}, nil
 }
 
-func (c *collectedDefs) LowerCommands() ([]*models.CommandDefinition, error) {
+func BuildCommandDefinition(cd ast.CommandDef) (*models.CommandDefinition, error) {
+		cmd := &models.CommandDefinition{
+	 		Name:     cd.Name,
+	 		Patterns: []models.CommandPattern{},
+	 	}
+
+		for _, f := range cd.Blocks {
+			if f.Key == "aliases" {
+				if 
+		}
+
+			
+	return nil, nil
+}
+
+func (c []*ast.CommandDef) LowerCommands() ([]*models.CommandDefinition, error) {
 	var out []*models.CommandDefinition
 
-	for _, def := range c.commandsById {
-		cmd := &models.CommandDefinition{
-			Name:     def.Name,
-			Aliases:  nil,
-			Patterns: []models.CommandPattern{},
-		}
+	// for _, def := range c.commandsById {
+	// 	cmd := &models.CommandDefinition{
+	// 		Name:     def.Name,
+	// 		Aliases:  nil,
+	// 		Patterns: []models.CommandPattern{},
+	// 	}
 
-		// Top-level fields like aliases
-		for _, f := range def.Fields {
-			if f.Key == "aliases" {
-				cmd.Aliases = f.Value.Strings
-			}
-		}
+	// 		// Top-level fields like aliases
+	// 		for _, f := range def.Fields {
+	// 			if f.Key == "aliases" {
+	// 				cmd.Aliases = f.Value.Strings
+	// 			}
+	// 		}
 
-		// Each pattern block
-		for _, block := range def.Blocks {
-			var syntax, noMatch string
-			for _, f := range block.Fields {
-				switch f.Key {
-				case "syntax":
-					syntax = f.Value.UnquotedString()
-				case "noMatch":
-					noMatch = f.Value.UnquotedString()
-				}
-			}
+	// 		// Each pattern block
+	// 		for _, block := range def.Blocks {
+	// 			var syntax, noMatch string
+	// 			for _, f := range block.Fields {
+	// 				switch f.Key {
+	// 				case "syntax":
+	// 					syntax = f.Value.UnquotedString()
+	// 				case "noMatch":
+	// 					noMatch = f.Value.UnquotedString()
+	// 				}
+	// 			}
 
-			tokens := tokenizeCommandSyntax(syntax)
-			cmd.Patterns = append(cmd.Patterns, models.CommandPattern{
-				Slots:          block.Slots,
-				Tokens:         tokens,
-				NoMatchMessage: noMatch,
-			})
-		}
+	// 			tokens := tokenizeCommandSyntax(syntax)
+	// 			cmd.Patterns = append(cmd.Patterns, models.CommandPattern{
+	// //				Slots:          block.Slots,
+	// 				Tokens:         tokens,
+	// 				NoMatchMessage: noMatch,
+	// 			})
+	// 		}
 
-		out = append(out, cmd)
-	}
+	// 		out = append(out, cmd)
+	//	}
 
 	return out, nil
 }
