@@ -309,7 +309,7 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 	// for each child-capable component on the entity, look up its pending child names from the prototype’s sidecar and attach recursively.
 	if rm, ok := entities.GetComponent[*components.Room](inst); ok {
 		slot := ep.childrenPlan[id][entities.ComponentRoom]
-		if len(slot) > 0 {
+		if len(slot) > 0 && len(rm.GetChildren().GetChildren()) == 0 {
 			for _, childName := range slot {
 				childInst, err := ep.instantiate(childName, rm)
 				if err != nil {
@@ -322,13 +322,26 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 
 	if inventory, ok := entities.GetComponent[*components.Inventory](inst); ok {
 		slot := ep.childrenPlan[id][entities.ComponentInventory]
-		if len(slot) > 0 {
+		if len(slot) > 0 && len(inventory.GetChildren().GetChildren()) == 0 {
 			for _, childName := range slot {
 				childInst, err := ep.instantiate(childName, inventory)
 				if err != nil {
 					return nil, err
 				}
 				inventory.GetChildren().AddChild(childInst)
+			}
+		}
+	}
+
+	if container, ok := entities.GetComponent[*components.Container](inst); ok {
+		slot := ep.childrenPlan[id][entities.ComponentContainer]
+		if len(slot) > 0 && len(container.GetChildren().GetChildren()) == 0 {
+			for _, childName := range slot {
+				childInst, err := ep.instantiate(childName, container)
+				if err != nil {
+					return nil, err
+				}
+				container.GetChildren().AddChild(childInst)
 			}
 		}
 	}

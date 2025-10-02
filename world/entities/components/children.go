@@ -50,6 +50,17 @@ func (c *Children) GetChildren() []*entities.Entity {
 
 func (c *Children) GetChildByAlias(alias string) (*entities.Entity, bool) {
 	child, ok := c.childByAlias[alias]
+	if ok {
+		return child, ok
+	}
+
+	for _, children := range c.GetChildren() {
+		for _, cwc := range children.GetComponentsWithChildren() {
+			grandchild, ok := cwc.GetChildren().GetChildByAlias(alias)
+			return grandchild, ok
+		}
+	}
+
 	return child, ok
 }
 

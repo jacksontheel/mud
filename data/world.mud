@@ -11,8 +11,7 @@ entity LivingRoom {
         }
 
         children is [
-            "Couch",
-            "Lamp"
+            "Box"
         ]
     }
 }
@@ -53,6 +52,20 @@ entity Lamp {
     description is "A dimly lit {'lamp' | bold | yellow} stands quietly in the corner, its weak glow casting just enough light to soften the edges of the room."
     aliases is ["lamp"]
     tags is ["furniture"]
+}
+
+entity Box {
+    name is "Box"
+    description is "A cardboard {'box' | bold | yellow} lies open."
+    aliases is ["box"]
+    tags is ["furniture"]
+    
+    component Container {
+        children is [
+            "Couch",
+            "Lamp"
+        ]
+    }
 }
 
 entity BedRoom {
