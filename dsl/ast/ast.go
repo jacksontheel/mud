@@ -104,6 +104,5 @@ type CommandBlock struct {
 }
 
 type CommandDefinitionDef struct {
-	Slots  []string    `"[" @Ident { "," @Ident } "]"`
-	Fields []*FieldDef `"{" { @@ } "}"`
+	Fields []*FieldDef `"pattern" "{" { @@ } "}"`
 }

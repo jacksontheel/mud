@@ -7,7 +7,6 @@ type CommandDefinition struct {
 }
 
 type CommandPattern struct {
-	Slots          []string
 	Tokens         []PatToken
 	NoMatchMessage string
 }

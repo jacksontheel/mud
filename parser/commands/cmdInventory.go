@@ -7,7 +7,6 @@ var inventoryCommand = &models.CommandDefinition{
 	Aliases: []string{"inventory", "inv"},
 	Patterns: []models.CommandPattern{
 		{
-			Slots: []string{}, // no slots needed
 			Tokens: []models.PatToken{
 				models.Lit("inventory"),
 			},
