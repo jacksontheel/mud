@@ -70,7 +70,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 
 	commands := make([]*models.CommandDefinition, 0, len(collectedDefs.commandsById))
 	for _, c := range collectedDefs.commandsById {
-		cd, err := BuildCommandDefinition(c)
+		cd, err := buildCommandDefinition(c)
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not instantiate command '%s'", c.Name)
 		}
@@ -305,7 +305,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	}, nil
 }
 
-func BuildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
+func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
 	cmd := &models.CommandDefinition{
 		Name:     cd.Name,
 		Aliases:  []string{},
@@ -322,15 +322,21 @@ func BuildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, erro
 				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
 			}
 		} else if b.CommandDefinitionDef != nil {
-			for _, f := range b.CommandDefinitionDef.Fields {
-				fmt.Println(f.Key)
-			}
+			// call buildCommandPattern here, it needs to take both syntax and nomatch
 		} else {
 			return nil, fmt.Errorf("could not expand command definition block")
 		}
 	}
 
 	return cmd, nil
+}
+
+// This function should take a *ast.CommandDefinitionDef and return a list of CommandPatterns
+func buildCommandPattern(s string) []models.PatToken {
+
+	// split s on space, and check if it's source ,target, or instrument, or message
+	// otherwise it's a literal
+	return nil
 }
 
 // func (c ) LowerCommands() ([]*models.CommandDefinition, error) {
