@@ -63,11 +63,6 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 		return nil, nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
 	}
 
-	// commands, err := collectedDefs.LowerCommands()
-	// if err != nil {
-	// 	return nil, nil, fmt.Errorf("could not lower commands: %w", err)
-	// }
-
 	commands := make([]*models.CommandDefinition, 0, len(collectedDefs.commandsById))
 	for _, c := range collectedDefs.commandsById {
 		cd, err := buildCommandDefinition(c)
@@ -322,7 +317,12 @@ func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, erro
 				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
 			}
 		} else if b.CommandDefinitionDef != nil {
-			// call buildCommandPattern here, it needs to take both syntax and nomatch
+			commandPattern, err := buildCommandPattern(b.CommandDefinitionDef)
+			if err != nil {
+				return nil, fmt.Errorf("could not build command pattern: %w", err)
+			}
+
+			cmd.Patterns = append(cmd.Patterns, *commandPattern)
 		} else {
 			return nil, fmt.Errorf("could not expand command definition block")
 		}
@@ -331,56 +331,9 @@ func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, erro
 	return cmd, nil
 }
 
-// This function should take a *ast.CommandDefinitionDef and return a list of CommandPatterns
-func buildCommandPattern(s string) []models.PatToken {
-
-	// split s on space, and check if it's source ,target, or instrument, or message
-	// otherwise it's a literal
-	return nil
+func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern, error) {
+	return nil, nil
 }
-
-// func (c ) LowerCommands() ([]*models.CommandDefinition, error) {
-// var out []*models.CommandDefinition
-
-// for _, def := range c.commandsById {
-// 	cmd := &models.CommandDefinition{
-// 		Name:     def.Name,
-// 		Aliases:  nil,
-// 		Patterns: []models.CommandPattern{},
-// 	}
-
-// 		// Top-level fields like aliases
-// 		for _, f := range def.Fields {
-// 			if f.Key == "aliases" {
-// 				cmd.Aliases = f.Value.Strings
-// 			}
-// 		}
-
-// 		// Each pattern block
-// 		for _, block := range def.Blocks {
-// 			var syntax, noMatch string
-// 			for _, f := range block.Fields {
-// 				switch f.Key {
-// 				case "syntax":
-// 					syntax = f.Value.UnquotedString()
-// 				case "noMatch":
-// 					noMatch = f.Value.UnquotedString()
-// 				}
-// 			}
-
-// 			tokens := tokenizeCommandSyntax(syntax)
-// 			cmd.Patterns = append(cmd.Patterns, models.CommandPattern{
-// //				Slots:          block.Slots,
-// 				Tokens:         tokens,
-// 				NoMatchMessage: noMatch,
-// 			})
-// 		}
-
-// 		out = append(out, cmd)
-//	}
-
-// return out, nil
-// }
 
 func tokenizeCommandSyntax(s string) []models.PatToken {
 	var tokens []models.PatToken
