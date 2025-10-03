@@ -56,11 +56,15 @@ type Component interface {
 }
 
 type ComponentWithChildren interface {
-	GetDescritionPrefix() string
 	GetChildren() IChildren
 }
 
 type IChildren interface {
+	SetRevealed(r bool)
+	GetRevealed() bool
+	SetPrefix(p string)
+	GetPrefix() string
+
 	AddChild(child *Entity) error
 	RemoveChild(child *Entity)
 	GetChildren() []*Entity

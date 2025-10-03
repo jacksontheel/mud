@@ -61,10 +61,28 @@ entity Box {
     tags is ["furniture"]
     
     component Container {
+        prefix is "Inside the box:"
+        revealed is false
         children is [
             "Couch",
             "Lamp"
         ]
+    }
+
+    react attack {
+       then {
+            reveal target.Container
+            print source "You beat the box and it opens"
+            publish "{source} attacks the box and it opens."
+        } 
+    }
+
+    react kiss {
+        then {
+            hide target.Container
+            print source "You kiss the box and it closes"
+            publish "{source} attacks the box and it closes."
+        }
     }
 }
 

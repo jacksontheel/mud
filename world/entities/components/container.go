@@ -1,8 +1,6 @@
 package components
 
 import (
-	"fmt"
-
 	"example.com/mud/world/entities"
 )
 
@@ -33,8 +31,4 @@ func NewContainer() *Container {
 
 func (c *Container) GetChildren() entities.IChildren {
 	return c.children
-}
-
-func (c *Container) GetDescritionPrefix() string {
-	return fmt.Sprintf("Inside the container:")
 }

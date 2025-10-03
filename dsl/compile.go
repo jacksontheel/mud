@@ -550,6 +550,23 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 				Field: aDef.SetField.Field,
 				Value: aDef.SetField.Value.Parse(),
 			}
+		} else if aDef.RevealChildrenAction != nil {
+			role, err := entities.ParseEventRole(aDef.RevealChildrenAction.Role)
+			if err != nil {
+				return nil, fmt.Errorf("could not build reveal children action for role: %w", err)
+			}
+
+			component, err := entities.ParseComponentType(aDef.RevealChildrenAction.Component)
+			if err != nil {
+				return nil, fmt.Errorf("could not build reveal children action: %w", err)
+			}
+
+			newAction = &actions.RevealChildren{
+				Role:          role,
+				ComponentType: component,
+				Reveal:        aDef.RevealChildrenAction.Set == "reveal",
+			}
+
 		} else {
 			return nil, fmt.Errorf("action in then is empty")
 		}

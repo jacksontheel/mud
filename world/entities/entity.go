@@ -100,6 +100,10 @@ func (e *Entity) GetDescription() (string, error) {
 	b.WriteString(formatted)
 
 	for _, cwc := range e.GetComponentsWithChildren() {
+		if !cwc.GetChildren().GetRevealed() {
+			continue
+		}
+
 		b.WriteString(" ")
 		children := cwc.GetChildren().GetChildren()
 		if len(children) == 0 {
@@ -108,7 +112,7 @@ func (e *Entity) GetDescription() (string, error) {
 
 		var childB strings.Builder
 
-		childB.WriteString(cwc.GetDescritionPrefix())
+		childB.WriteString(cwc.GetChildren().GetPrefix())
 		childB.WriteString(" (")
 
 		for _, child := range children {

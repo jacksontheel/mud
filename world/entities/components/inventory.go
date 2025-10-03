@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"strings"
 
 	"example.com/mud/world/entities"
@@ -34,10 +33,6 @@ func NewInventory() *Inventory {
 
 func (i *Inventory) GetChildren() entities.IChildren {
 	return i.children
-}
-
-func (i *Inventory) GetDescritionPrefix() string {
-	return fmt.Sprintf("Inside the inventory:")
 }
 
 func (i *Inventory) Print() (string, error) {

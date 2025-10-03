@@ -1,11 +1,12 @@
 package ast
 
 type ActionDef struct {
-	Print    *PrintAction    `  "print" @@`
-	Publish  *PublishAction  `| "publish" @@`
-	Copy     *CopyAction     `| "copy" @@`
-	Move     *MoveAction     `| "move" @@`
-	SetField *SetFieldAction `| "set" @@`
+	Print                *PrintAction          `  "print" @@`
+	Publish              *PublishAction        `| "publish" @@`
+	Copy                 *CopyAction           `| "copy" @@`
+	Move                 *MoveAction           `| "move" @@`
+	SetField             *SetFieldAction       `| "set" @@`
+	RevealChildrenAction *RevealChildrenAction `| @@`
 }
 
 type PrintAction struct {
@@ -33,4 +34,10 @@ type SetFieldAction struct {
 	Role  string  `@Ident`
 	Field string  `"." @Ident`
 	Value Literal `"to" @@`
+}
+
+type RevealChildrenAction struct {
+	Set       string `@("reveal" | "hide")`
+	Role      string `@Ident`
+	Component string `"." @Ident`
 }
