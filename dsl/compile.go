@@ -77,7 +77,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 	return entitiesById, commands, nil
 }
 
-// collect entity and trait definitions
+// collect entity, command and trait definitions
 func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	entitiesById := make(map[string]*ast.EntityDef, len(decls))
 	commandsById := make(map[string]*ast.CommandDef, len(decls))
@@ -344,10 +344,10 @@ func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern,
 		case "noMatch":
 			p.NoMatchMessage = *f.Value.String
 		default:
-			// fuck you (err)
+			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %w", def.Fields)
+			return nil, err
 		}
 	}
-
 	return p, nil
 }
 

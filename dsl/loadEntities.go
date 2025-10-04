@@ -23,7 +23,6 @@ func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entit
 		return nil, nil, fmt.Errorf("parser build failed %w", err)
 	}
 
-	// create container for file contents
 	var ast = &ast.DSL{}
 
 	err = filepath.WalkDir(directoryName, func(path string, d fs.DirEntry, err error) error {
@@ -35,7 +34,7 @@ func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entit
 			return nil
 		}
 
-		fmt.Println("Parsing DSL file:", path) // helpful for debugging
+		fmt.Println("Parsing DSL file:", path)
 
 		data, err := os.ReadFile(path)
 		if err != nil {

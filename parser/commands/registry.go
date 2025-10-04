@@ -65,16 +65,3 @@ func RegisterCommands(defs []*models.CommandDefinition) error {
 	}
 	return nil
 }
-
-// func MergeAliasMaps(aliasMaps ...map[string]string) (map[string]string, error) {
-// 	combinedAliasMap := make(map[string]string)
-// 	for _, m := range aliasMaps {
-// 		for k, v := range m {
-// 			if existing, ok := combinedAliasMap[k]; ok && existing != v {
-// 				return nil, fmt.Errorf("alias conflict: %q maps to both %q and %q", k, existing, v)
-// 			}
-// 			combinedAliasMap[k] = v
-// 		}
-// 	}
-// 	return combinedAliasMap, nil
-// }
