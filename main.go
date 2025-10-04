@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 
 	"example.com/mud/dsl"
+	"example.com/mud/parser/commands"
 	"example.com/mud/world"
 )
 
@@ -89,9 +91,17 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 }
 
 func main() {
-	entityMap, err := dsl.LoadEntitiesFromDirectory("data/")
+	entityMap, cmds, err := dsl.LoadEntitiesFromDirectory("data/")
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to load DSL entities: %v", err)
+	}
+
+	if err := commands.RegisterBuiltInCommands(); err != nil {
+		panic(fmt.Errorf("failed to register built-in commands: %w", err))
+	}
+
+	if err := commands.RegisterCommands(cmds); err != nil {
+		panic(fmt.Errorf("failed to register DSL commands: %w", err))
 	}
 
 	gameWorld := world.NewWorld(entityMap)

@@ -2,8 +2,10 @@ package dsl
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/mud/dsl/ast"
+	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
@@ -13,6 +15,7 @@ import (
 type collectedDefs struct {
 	entitiesById map[string]*ast.EntityDef
 	traitsById   map[string]*ast.TraitDef
+	commandsById map[string]*ast.CommandDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
@@ -40,32 +43,44 @@ type entityPrototypes struct {
 	visiting       map[string]struct{}
 }
 
-func Compile(ast *ast.DSL) (map[string]*entities.Entity, error) {
+func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
 	if ast == nil {
-		return nil, fmt.Errorf("nil DSL")
+		return nil, nil, fmt.Errorf("nil DSL")
 	}
 
 	collectedDefs, err := collectDefs(ast.Declarations)
 	if err != nil {
-		return nil, fmt.Errorf("could not collect top level declarations: %w", err)
+		return nil, nil, fmt.Errorf("could not collect top level declarations: %w", err)
 	}
 
 	prototypes, err := collectedDefs.collectPrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not collect prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not collect prototype entities: %w", err)
 	}
 
 	entitiesById, err := prototypes.instantiatePrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
 	}
 
-	return entitiesById, nil
+	commands := make([]*models.CommandDefinition, 0, len(collectedDefs.commandsById))
+	for _, c := range collectedDefs.commandsById {
+		cd, err := buildCommandDefinition(c)
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not instantiate command '%s'", c.Name)
+		}
+
+		commands = append(commands, cd)
+	}
+
+	fmt.Println(len(commands))
+	return entitiesById, commands, nil
 }
 
-// collect entity and trait definitions
+// collect entity, command and trait definitions
 func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	entitiesById := make(map[string]*ast.EntityDef, len(decls))
+	commandsById := make(map[string]*ast.CommandDef, len(decls))
 	traitsById := make(map[string]*ast.TraitDef, len(decls))
 
 	for _, declaration := range decls {
@@ -85,6 +100,12 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 			}
 
 			traitsById[declaration.Trait.Name] = declaration.Trait
+		} else if ec := declaration.Command; ec != nil {
+			if _, exists := commandsById[ec.Name]; exists {
+				return nil, fmt.Errorf("duplicate command %s", ec.Name)
+			}
+
+			commandsById[declaration.Command.Name] = declaration.Command
 		} else {
 			return nil, fmt.Errorf("declaration at top level is empty")
 		}
@@ -93,6 +114,7 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	return &collectedDefs{
 		entitiesById: entitiesById,
 		traitsById:   traitsById,
+		commandsById: commandsById,
 	}, nil
 }
 
@@ -277,6 +299,71 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 		fields:         fields,
 		rulesByCommand: rulesByCommand,
 	}, nil
+}
+
+func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
+	cmd := &models.CommandDefinition{
+		Name:     strings.ToLower(cd.Name),
+		Aliases:  []string{},
+		Patterns: []models.CommandPattern{},
+	}
+
+	for _, b := range cd.Blocks {
+		if b.Field != nil {
+			f := b.Field
+			switch f.Key {
+			case "aliases":
+				cmd.Aliases = append(cmd.Aliases, f.Value.Strings...)
+			default:
+				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
+			}
+		} else if b.CommandDefinitionDef != nil {
+			commandPattern, err := buildCommandPattern(b.CommandDefinitionDef)
+			if err != nil {
+				return nil, fmt.Errorf("could not build command pattern: %w", err)
+			}
+
+			cmd.Patterns = append(cmd.Patterns, *commandPattern)
+		} else {
+			return nil, fmt.Errorf("could not expand command definition block")
+		}
+	}
+
+	return cmd, nil
+}
+
+func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern, error) {
+	var p = &models.CommandPattern{
+		Tokens: []models.PatToken{},
+	}
+
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "syntax":
+			p.Tokens = tokenizeCommandSyntax(*f.Value.String)
+		case "noMatch":
+			p.NoMatchMessage = *f.Value.String
+		default:
+			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %w", def.Fields)
+			return nil, err
+		}
+	}
+	return p, nil
+}
+
+func tokenizeCommandSyntax(s string) []models.PatToken {
+	var tokens []models.PatToken
+	parts := strings.Fields(s)
+
+	for _, part := range parts {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			slot := strings.Trim(part, "{}")
+			tokens = append(tokens, models.Slot(slot))
+		} else {
+			tokens = append(tokens, models.Lit(part))
+		}
+	}
+	return tokens
 }
 
 // loop through prototypes and instantiate them into a map of entities by name

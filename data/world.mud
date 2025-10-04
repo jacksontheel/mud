@@ -132,7 +132,7 @@ entity Goblin {
 
 entity Toilet {
     name is "Toilet"
-    description is "A {'toilet' | bold | yellow}, you piss and poop in here."
+    description is "A {'toilet' | bold | yellow}, it's shiny and porcelain."
     aliases is ["toilet"]
     tags is ["furniture"]
 
