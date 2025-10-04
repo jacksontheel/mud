@@ -34,47 +34,13 @@ var Patterns = []models.Pattern{}
 
 func RegisterBuiltInCommands() error {
 	return RegisterCommands([]*models.CommandDefinition{
-		// attackCommand,
-		inventoryCommand,
-		// kissCommand,
-		// lookCommand,
-		// moveCommand,
-		// sayCommand,
-		// takeCommand,
-		// whisperCommand,
+		&inventoryCommand,
+		&lookCommand,
+		&moveCommand,
+		&sayCommand,
+		&whisperCommand,
 	})
 }
-
-// func init() {
-// 	addCommandDefinition(attackCommand)
-// 	addCommandDefinition(inventoryCommand)
-// 	addCommandDefinition(kissCommand)
-// 	addCommandDefinition(lookCommand)
-// 	addCommandDefinition(moveCommand)
-// 	addCommandDefinition(sayCommand)
-// 	addCommandDefinition(takeCommand)
-// 	addCommandDefinition(whisperCommand)
-// }
-
-// func addCommandDefinition(cd CommandDefinition) error {
-// 	if len(cd.Aliases) == 0 {
-// 		return fmt.Errorf("command definition must have at least one alias")
-// 	}
-
-// 	// add command to commands
-// 	Commands[cd.Aliases[0]] = struct{}{}
-
-// 	// add aliases to verbAliases
-// 	canonicalName := cd.Aliases[0]
-// 	for _, a := range cd.Aliases {
-// 		VerbAliases[a] = canonicalName
-// 	}
-
-// 	// add patterns to patterns
-// 	Patterns = append(Patterns, cd.Pattern...)
-
-// 	return nil
-// }
 
 func RegisterCommands(defs []*models.CommandDefinition) error {
 	for _, cd := range defs {
@@ -98,10 +64,6 @@ func RegisterCommands(defs []*models.CommandDefinition) error {
 		}
 	}
 	return nil
-}
-
-func RegisterCommand(def *models.CommandDefinition) error {
-	return RegisterCommands([]*models.CommandDefinition{def})
 }
 
 // func MergeAliasMaps(aliasMaps ...map[string]string) (map[string]string, error) {

@@ -120,46 +120,6 @@ func (p *Player) Whisper(target string, message string) (string, error) {
 	return fmt.Sprintf("You whisper to %s: \"%s\"", target, message), nil
 }
 
-func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {
-	if instrumentAlias == "" {
-		message, err := p.actUpon(
-			"attack",
-			targetAlias,
-			fmt.Sprintf("Now is not the time to attack %s.", targetAlias),
-		)
-		if err != nil {
-			return "", fmt.Errorf("attack for player '%s': %w", p.name, err)
-		}
-
-		return message, nil
-	}
-
-	message, err := p.actUponWith(
-		"attack",
-		targetAlias,
-		instrumentAlias,
-		fmt.Sprintf("You reconsider attacking %s with %s, it's ridiculous.", targetAlias, instrumentAlias),
-	)
-	if err != nil {
-		return "", fmt.Errorf("attack with instrument for player '%s': %w", p.name, err)
-	}
-
-	return message, nil
-}
-
-func (p *Player) Kiss(alias string) (string, error) {
-	message, err := p.actUpon(
-		"kiss",
-		alias,
-		fmt.Sprintf("You can be romantic with %s later.", alias),
-	)
-	if err != nil {
-		return "", fmt.Errorf("kiss for player '%s': %w", p.name, err)
-	}
-
-	return message, nil
-}
-
 func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) {
 	target, err := p.getEntityByAlias(alias)
 	if err != nil {

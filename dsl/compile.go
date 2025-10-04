@@ -303,7 +303,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 
 func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
 	cmd := &models.CommandDefinition{
-		Name:     cd.Name,
+		Name:     strings.ToLower(cd.Name),
 		Aliases:  []string{},
 		Patterns: []models.CommandPattern{},
 	}
@@ -340,7 +340,7 @@ func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern,
 	for _, f := range def.Fields {
 		switch f.Key {
 		case "syntax":
-			tokenizeCommandSyntax(*f.Value.String)
+			p.Tokens = tokenizeCommandSyntax(*f.Value.String)
 		case "noMatch":
 			p.NoMatchMessage = *f.Value.String
 		default:

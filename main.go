@@ -96,16 +96,10 @@ func main() {
 		log.Fatalf("Failed to load DSL entities: %v", err)
 	}
 
-	for _, cmd := range cmds {
-		fmt.Println(cmd.Aliases)
-	}
-
-	// Register built-in commands
 	if err := commands.RegisterBuiltInCommands(); err != nil {
 		panic(fmt.Errorf("failed to register built-in commands: %w", err))
 	}
 
-	// Register DSL-defined commands
 	if err := commands.RegisterCommands(cmds); err != nil {
 		panic(fmt.Errorf("failed to register DSL commands: %w", err))
 	}
