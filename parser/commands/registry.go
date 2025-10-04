@@ -33,7 +33,7 @@ var VerbAliases = map[string]string{}
 var Patterns = []models.Pattern{}
 
 func RegisterBuiltInCommands() error {
-	return registerCommands([]*models.CommandDefinition{
+	return RegisterCommands([]*models.CommandDefinition{
 		// attackCommand,
 		inventoryCommand,
 		// kissCommand,
@@ -43,10 +43,6 @@ func RegisterBuiltInCommands() error {
 		// takeCommand,
 		// whisperCommand,
 	})
-}
-
-func RegisterDSLCommands(defs []*models.CommandDefinition) error {
-	return registerCommands(defs)
 }
 
 // func init() {
@@ -80,7 +76,7 @@ func RegisterDSLCommands(defs []*models.CommandDefinition) error {
 // 	return nil
 // }
 
-func registerCommands(defs []*models.CommandDefinition) error {
+func RegisterCommands(defs []*models.CommandDefinition) error {
 	for _, cd := range defs {
 		if len(cd.Aliases) == 0 {
 			return fmt.Errorf("command '%s' has no aliases", cd.Name)
@@ -102,6 +98,10 @@ func registerCommands(defs []*models.CommandDefinition) error {
 		}
 	}
 	return nil
+}
+
+func RegisterCommand(def *models.CommandDefinition) error {
+	return RegisterCommands([]*models.CommandDefinition{def})
 }
 
 // func MergeAliasMaps(aliasMaps ...map[string]string) (map[string]string, error) {

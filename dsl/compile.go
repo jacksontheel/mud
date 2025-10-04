@@ -73,6 +73,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 		commands = append(commands, cd)
 	}
 
+	fmt.Println(len(commands))
 	return entitiesById, commands, nil
 }
 
@@ -332,7 +333,22 @@ func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, erro
 }
 
 func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern, error) {
-	return nil, nil
+	var p = &models.CommandPattern{
+		Tokens: []models.PatToken{},
+	}
+
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "syntax":
+			tokenizeCommandSyntax(*f.Value.String)
+		case "noMatch":
+			p.NoMatchMessage = *f.Value.String
+		default:
+			// fuck you (err)
+		}
+	}
+
+	return p, nil
 }
 
 func tokenizeCommandSyntax(s string) []models.PatToken {
