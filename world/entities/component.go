@@ -9,6 +9,7 @@ const (
 	ComponentRoom
 	ComponentEventful
 	ComponentInventory
+	ComponentContainer
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	ComponentRoomString      = "Room"
 	ComponentEventfulString  = "Eventful"
 	ComponentInventoryString = "Inventory"
+	ComponentContainerString = "Container"
 )
 
 func ParseComponentType(s string) (ComponentType, error) {
@@ -26,6 +28,8 @@ func ParseComponentType(s string) (ComponentType, error) {
 		return ComponentEventful, nil
 	case ComponentInventoryString:
 		return ComponentInventory, nil
+	case ComponentContainerString:
+		return ComponentContainer, nil
 	default:
 		return ComponentUnknown, fmt.Errorf("unknown component type '%s'", s)
 	}
@@ -39,6 +43,8 @@ func (ct ComponentType) String() string {
 		return ComponentEventfulString
 	case ComponentInventory:
 		return ComponentInventoryString
+	case ComponentContainer:
+		return ComponentContainerString
 	default:
 		return ComponentUnknownString
 	}
@@ -54,6 +60,11 @@ type ComponentWithChildren interface {
 }
 
 type IChildren interface {
+	SetRevealed(r bool)
+	GetRevealed() bool
+	SetPrefix(p string)
+	GetPrefix() string
+
 	AddChild(child *Entity) error
 	RemoveChild(child *Entity)
 	GetChildren() []*Entity

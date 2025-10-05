@@ -12,7 +12,8 @@ entity LivingRoom {
 
         children is [
             "Couch",
-            "Lamp"
+            "Lamp",
+            "Box"
         ]
     }
 }
@@ -55,6 +56,56 @@ entity Lamp {
     description is "A dimly lit {'lamp' | bold | yellow} stands quietly in the corner, its weak glow casting just enough light to soften the edges of the room."
     aliases is ["lamp"]
     tags is ["furniture"]
+}
+
+entity Box {
+    name is "Box"
+    description is "A cardboard {'box' | bold | yellow} is here, too."
+    aliases is ["box"]
+    tags is ["furniture"]
+    
+    component Container {
+        prefix is "Inside the box:"
+        revealed is true
+        children is [
+            "Book",
+            "Shoe"
+        ]
+    }
+
+    react open {
+       then {
+            reveal target.Container
+            print source "You open the box."
+            publish "{source} opens the box"
+        } 
+    }
+
+    react close {
+        then {
+            hide target.Container
+            print source "You close the box."
+            publish "{source} closes the box."
+        }
+    }
+}
+
+entity Book {
+    name is "Book"
+    description is "A {'book' | bold | yellow} with a leather cover, a bold adaptation of VeggieTales with human characters."
+    aliases is ["book"]
+    tags is ["item"]
+    
+    trait Item 
+}
+
+entity Shoe {
+    name is "Shoe"
+    description is "A battered left shoe, the sole hangs unattached at the toe."
+    aliases is ["shoe"]
+    tags is ["item"]
+    
+    trait Item 
 }
 
 entity BedRoom {

@@ -3,15 +3,36 @@ package components
 import "example.com/mud/world/entities"
 
 type Children struct {
+	revealed bool
+	prefix   string
+
 	childByAlias   map[string]*entities.Entity
 	aliasesByChild map[*entities.Entity][]string
 }
+
+var _ entities.IChildren = &Children{}
 
 func NewChildren() *Children {
 	return &Children{
 		childByAlias:   make(map[string]*entities.Entity),
 		aliasesByChild: make(map[*entities.Entity][]string),
 	}
+}
+
+func (c *Children) GetPrefix() string {
+	return c.prefix
+}
+
+func (c *Children) GetRevealed() bool {
+	return c.revealed
+}
+
+func (c *Children) SetPrefix(p string) {
+	c.prefix = p
+}
+
+func (c *Children) SetRevealed(r bool) {
+	c.revealed = r
 }
 
 func (c *Children) AddChild(child *entities.Entity) error {
@@ -50,6 +71,21 @@ func (c *Children) GetChildren() []*entities.Entity {
 
 func (c *Children) GetChildByAlias(alias string) (*entities.Entity, bool) {
 	child, ok := c.childByAlias[alias]
+	if ok {
+		return child, ok
+	}
+
+	for _, children := range c.GetChildren() {
+		for _, cwc := range children.GetComponentsWithChildren() {
+			if !cwc.GetChildren().GetRevealed() {
+				continue
+			}
+
+			grandchild, ok := cwc.GetChildren().GetChildByAlias(alias)
+			return grandchild, ok
+		}
+	}
+
 	return child, ok
 }
 

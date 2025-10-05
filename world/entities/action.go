@@ -8,6 +8,7 @@ const (
 	ActionCopy
 	ActionMove
 	ActionSetField
+	ActionRevealChildren
 )
 
 type Action interface {
