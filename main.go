@@ -15,7 +15,7 @@ import (
 func handleConnection(conn net.Conn, gameWorld *world.World) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
-	vdn := ""
+	var name string
 
 	for {
 
@@ -23,11 +23,11 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 			return
 		}
 
-		name, _ := reader.ReadString('\n')
+		name, _ = reader.ReadString('\n')
 		name = strings.TrimSpace(name)
 
-		vdn, err := world.NameValidation(name)
-		if err != nil {
+		vdn := world.NameValidation(name)
+		if vdn != "" {
 			fmt.Fprint(conn, vdn)
 			continue
 		}
@@ -35,7 +35,7 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 	}
 
 	inbox := make(chan string, 64)
-	player := gameWorld.AddPlayer(vdn, inbox)
+	player := gameWorld.AddPlayer(name, inbox)
 
 	message, err := player.OpeningMessage()
 	if err != nil {
