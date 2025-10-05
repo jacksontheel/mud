@@ -41,20 +41,20 @@ func (p *Player) OpeningMessage() (string, error) {
 	return message, nil
 }
 
-func NameValidation(name string) (string, error) {
+func NameValidation(name string) string {
 	if len(name) == 0 {
-		return "Please, speak up! I didn't hear a name.\n", fmt.Errorf("name cannot be empty")
+		return "Please, speak up! I didn't hear a name.\n"
 	} else if len(name) > 20 {
-		return "That's much too long to remember!\n", fmt.Errorf("name must be less than 20 characters: %s", name)
+		return "That's much too long to remember!\n"
 	}
 
 	testName := safeNameRegex.ReplaceAllString(name, "")
 
 	if testName != name {
-		return "I'm no good with numbers or spaces, and I only speak English!\n", fmt.Errorf("name contains illegal characters: %s", name)
+		return "I'm no good with numbers or spaces, and I only speak English!\n"
 	}
 
-	return name, nil
+	return ""
 }
 
 func (p *Player) Move(direction string) (string, error) {
