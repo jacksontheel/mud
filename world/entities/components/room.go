@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"strings"
 
 	"example.com/mud/world/entities"
@@ -36,10 +35,6 @@ func (r *Room) Copy() entities.Component {
 
 func (r *Room) GetChildren() entities.IChildren {
 	return r.children
-}
-
-func (r *Room) GetDescritionPrefix() string {
-	return fmt.Sprintf("Inside the room:")
 }
 
 func (r *Room) SetExits(exits map[string]string) {
