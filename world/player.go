@@ -2,11 +2,14 @@ package world
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 )
+
+var safeNameRegex = regexp.MustCompile(`[^a-zA-Z]+`)
 
 type Player struct {
 	world       *World
@@ -36,6 +39,22 @@ func (p *Player) OpeningMessage() (string, error) {
 	}
 
 	return message, nil
+}
+
+func NameValidation(name string) (string, error) {
+	if len(name) == 0 {
+		return "Please, speak up! I didn't hear a name.\n", fmt.Errorf("name cannot be empty")
+	} else if len(name) > 20 {
+		return "That's much too long to remember!\n", fmt.Errorf("name must be less than 20 characters: %s", name)
+	}
+
+	testName := safeNameRegex.ReplaceAllString(name, "")
+
+	if testName != name {
+		return "I'm no good with numbers or spaces, and I only speak English!\n", fmt.Errorf("name contains illegal characters: %s", name)
+	}
+
+	return name, nil
 }
 
 func (p *Player) Move(direction string) (string, error) {
@@ -118,46 +137,6 @@ func (p *Player) Whisper(target string, message string) (string, error) {
 	p.world.bus.PublishTo(p.currentRoom, recipient, whisper)
 
 	return fmt.Sprintf("You whisper to %s: \"%s\"", target, message), nil
-}
-
-func (p *Player) Attack(targetAlias, instrumentAlias string) (string, error) {
-	if instrumentAlias == "" {
-		message, err := p.actUpon(
-			"attack",
-			targetAlias,
-			fmt.Sprintf("Now is not the time to attack %s.", targetAlias),
-		)
-		if err != nil {
-			return "", fmt.Errorf("attack for player '%s': %w", p.name, err)
-		}
-
-		return message, nil
-	}
-
-	message, err := p.actUponWith(
-		"attack",
-		targetAlias,
-		instrumentAlias,
-		fmt.Sprintf("You reconsider attacking %s with %s, it's ridiculous.", targetAlias, instrumentAlias),
-	)
-	if err != nil {
-		return "", fmt.Errorf("attack with instrument for player '%s': %w", p.name, err)
-	}
-
-	return message, nil
-}
-
-func (p *Player) Kiss(alias string) (string, error) {
-	message, err := p.actUpon(
-		"kiss",
-		alias,
-		fmt.Sprintf("You can be romantic with %s later.", alias),
-	)
-	if err != nil {
-		return "", fmt.Errorf("kiss for player '%s': %w", p.name, err)
-	}
-
-	return message, nil
 }
 
 func (p *Player) actUpon(action, alias, noMatchResponse string) (string, error) {

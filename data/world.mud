@@ -45,6 +45,8 @@ entity Nickel {
     description is "A shining {'nickel' | bold | yellow} lies here, Thomas Jefferson’s handsome side profile glinting faintly as though pleased with its escape."
     aliases is ["nickel"]
     tags is ["item"]
+
+   trait Item 
 }
 
 entity Lamp {
@@ -138,6 +140,8 @@ entity Goblin {
     aliases is ["goblin", "man"]
     tags is ["npc"]
 
+    component Inventory {}
+
     react attack {
         then {
             print source "As you throw a {'punch' | yellow} at the goblin, he jumps around you, {'kissing' | red} your forehead."
@@ -159,11 +163,26 @@ entity Goblin {
             publish "{source} gives the goblin in their pocket a big wet {'kiss' | bold | red}."
         }
     }
+
+    react give {
+        when {
+            instrument has tag "item"
+        } then {
+            print source "You give the goblin your {instrument}, and he accepts it happily. 'You win!' He says, 'You win the game for giving the goblin an item!'"
+            publish "{source} gives the goblin {instrument}. The goblin is overjoyed."
+            move instrument to target.Inventory
+        }
+
+        then {
+            print source "The goblin gives you a smile, shaking his head softly. 'I don't want that stupid smelly thing,' he says."
+            publish "{source} tries to give the goblin {instrument}, but he refuses to take it."
+        }
+    }
 }
 
 entity Toilet {
     name is "Toilet"
-    description is "A {'toilet' | bold | yellow}, you piss and poop in here."
+    description is "A {'toilet' | bold | yellow}, it's shiny and porcelain."
     aliases is ["toilet"]
     tags is ["furniture"]
 

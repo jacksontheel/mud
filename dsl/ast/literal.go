@@ -1,5 +1,7 @@
 package ast
 
+import "strings"
+
 type Literal struct {
 	String  *string  `  @String`
 	Bool    *string  `| @Bool`
@@ -28,4 +30,11 @@ func (l *Literal) AsMap() map[string]string {
 		m[kv.Key] = kv.Value
 	}
 	return m
+}
+
+func (l *Literal) UnquotedString() string {
+	if l.String == nil {
+		return ""
+	}
+	return strings.Trim(*l.String, `"`)
 }

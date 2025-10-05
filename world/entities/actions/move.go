@@ -28,6 +28,8 @@ func (m *Move) Execute(ev *entities.Event) error {
 		origin = ev.Instrument
 	case entities.EventRoleTarget:
 		origin = ev.Target
+	case entities.EventRoleRoom:
+		origin = ev.Room
 	default:
 		return fmt.Errorf("invalid origin role '%s' for move action", m.RoleOrigin.String())
 	}
@@ -44,6 +46,8 @@ func (m *Move) Execute(ev *entities.Event) error {
 		destination = ev.Instrument
 	case entities.EventRoleTarget:
 		destination = ev.Target
+	case entities.EventRoleRoom:
+		destination = ev.Room
 	default:
 		return fmt.Errorf("invalid origin role '%s' for move action", m.RoleDestination.String())
 	}

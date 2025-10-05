@@ -3,24 +3,39 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 
 	"example.com/mud/dsl"
+	"example.com/mud/parser/commands"
 	"example.com/mud/world"
 )
 
 func handleConnection(conn net.Conn, gameWorld *world.World) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
+	vdn := ""
 
-	fmt.Fprint(conn, "What is your name, weary adventurer? ")
+	for {
 
-	name, _ := reader.ReadString('\n')
-	name = strings.TrimSpace(name)
+		if _, err := fmt.Fprint(conn, "What is your name, weary adventurer? "); err != nil {
+			return
+		}
+
+		name, _ := reader.ReadString('\n')
+		name = strings.TrimSpace(name)
+
+		vdn, err := world.NameValidation(name)
+		if err != nil {
+			fmt.Fprint(conn, vdn)
+			continue
+		}
+		break
+	}
 
 	inbox := make(chan string, 64)
-	player := gameWorld.AddPlayer(name, inbox)
+	player := gameWorld.AddPlayer(vdn, inbox)
 
 	message, err := player.OpeningMessage()
 	if err != nil {
@@ -89,9 +104,17 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 }
 
 func main() {
-	entityMap, err := dsl.LoadEntitiesFromDirectory("data/")
+	entityMap, cmds, err := dsl.LoadEntitiesFromDirectory("data/")
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to load DSL entities: %v", err)
+	}
+
+	if err := commands.RegisterBuiltInCommands(); err != nil {
+		panic(fmt.Errorf("failed to register built-in commands: %w", err))
+	}
+
+	if err := commands.RegisterCommands(cmds); err != nil {
+		panic(fmt.Errorf("failed to register DSL commands: %w", err))
 	}
 
 	gameWorld := world.NewWorld(entityMap)
