@@ -73,7 +73,6 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 		commands = append(commands, cd)
 	}
 
-	fmt.Println(len(commands))
 	return entitiesById, commands, nil
 }
 
