@@ -15,14 +15,25 @@ import (
 func handleConnection(conn net.Conn, gameWorld *world.World) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
+	vdn := ""
 
-	fmt.Fprint(conn, "What is your name, weary adventurer? ")
+	for {
+		fmt.Fprint(conn, "What is your name, weary adventurer? ")
 
-	name, _ := reader.ReadString('\n')
-	name = strings.TrimSpace(name)
+		name, _ := reader.ReadString('\n')
+		name = strings.TrimSpace(name)
+
+		vdn, err := world.NameValidation(name)
+		if err != nil {
+			fmt.Fprint(conn, vdn)
+			fmt.Println(err.Error())
+			continue
+		}
+		break
+	}
 
 	inbox := make(chan string, 64)
-	player := gameWorld.AddPlayer(name, inbox)
+	player := gameWorld.AddPlayer(vdn, inbox)
 
 	message, err := player.OpeningMessage()
 	if err != nil {

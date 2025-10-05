@@ -2,11 +2,14 @@ package world
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 )
+
+var safeNameRegex = regexp.MustCompile(`[^a-zA-Z]+`)
 
 type Player struct {
 	world       *World
@@ -36,6 +39,22 @@ func (p *Player) OpeningMessage() (string, error) {
 	}
 
 	return message, nil
+}
+
+func NameValidation(name string) (string, error) {
+	if len(name) == 0 {
+		return "Please, speak up! I didn't hear a name.", fmt.Errorf("name cannot be empty")
+	} else if len(name) > 20 {
+		return "That's much too long to remember!", fmt.Errorf("name must be less than 20 characters: %s", name)
+	}
+
+	testName := safeNameRegex.ReplaceAllString(name, "")
+
+	if testName != name {
+		return "I'm no good with numbers or spaces, and I only speak English!", fmt.Errorf("name contains illegal characters: %s", name)
+	}
+
+	return name, nil
 }
 
 func (p *Player) Move(direction string) (string, error) {
