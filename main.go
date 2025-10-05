@@ -18,7 +18,10 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 	vdn := ""
 
 	for {
-		fmt.Fprint(conn, "What is your name, weary adventurer? ")
+
+		if _, err := fmt.Fprint(conn, "What is your name, weary adventurer? "); err != nil {
+			return
+		}
 
 		name, _ := reader.ReadString('\n')
 		name = strings.TrimSpace(name)
@@ -26,7 +29,6 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 		vdn, err := world.NameValidation(name)
 		if err != nil {
 			fmt.Fprint(conn, vdn)
-			fmt.Println(err.Error())
 			continue
 		}
 		break
