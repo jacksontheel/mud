@@ -22,7 +22,7 @@ func (i *Inventory) Copy() entities.Component {
 	for _, child := range i.children.GetChildren() {
 		inventory.children.AddChild(child)
 	}
-	return i
+	return inventory
 }
 
 func NewInventory() *Inventory {
