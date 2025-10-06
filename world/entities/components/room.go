@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 
 	"example.com/mud/world/entities"
@@ -31,6 +32,22 @@ func (r *Room) Copy() entities.Component {
 		exits:    r.exits,
 		children: NewChildren(),
 	}
+}
+
+func (r *Room) AddChild(child *entities.Entity) error {
+	err := r.GetChildren().AddChild(child)
+	if err != nil {
+		return fmt.Errorf("Inventory add child: %w", err)
+	}
+
+	child.Parent = r
+
+	return nil
+}
+
+func (r *Room) RemoveChild(child *entities.Entity) {
+	child.Parent = nil
+	r.GetChildren().RemoveChild(child)
 }
 
 func (r *Room) GetChildren() entities.IChildren {

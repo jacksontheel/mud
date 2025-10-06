@@ -67,11 +67,11 @@ func (p *Player) Move(direction string) (string, error) {
 	if newRoom != nil {
 		p.world.Publish(p, fmt.Sprintf("%s leaves the room.", p.name))
 
-		currentRoom.GetChildren().RemoveChild(p.entity)
+		currentRoom.RemoveChild(p.entity)
 		p.currentRoom = newRoom
 
 		if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-			room.GetChildren().AddChild(p.entity)
+			room.AddChild(p.entity)
 		}
 
 		p.world.Bus().Move(p.currentRoom, p.entity)

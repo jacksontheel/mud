@@ -401,7 +401,7 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 				if err != nil {
 					return nil, err
 				}
-				rm.GetChildren().AddChild(childInst)
+				rm.AddChild(childInst)
 			}
 		}
 	}
@@ -414,7 +414,7 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 				if err != nil {
 					return nil, err
 				}
-				inventory.GetChildren().AddChild(childInst)
+				inventory.AddChild(childInst)
 			}
 		}
 	}
@@ -427,7 +427,7 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 				if err != nil {
 					return nil, err
 				}
-				container.GetChildren().AddChild(childInst)
+				container.AddChild(childInst)
 			}
 		}
 	}

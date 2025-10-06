@@ -24,10 +24,10 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
-	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
+	player := NewPlayer(name, w, w.entityMap["BalkingCrow"])
 
 	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
-		room.GetChildren().AddChild(player.entity)
+		room.AddChild(player.entity)
 	}
 
 	w.bus.Subscribe(player.currentRoom, player.entity, inbox)
@@ -42,7 +42,7 @@ func (w *World) EntitiesById() map[string]*entities.Entity { return w.entityMap 
 
 func (w *World) DisconnectPlayer(p *Player) {
 	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-		room.GetChildren().RemoveChild(p.entity)
+		room.RemoveChild(p.entity)
 	}
 
 	w.bus.Unsubscribe(p.currentRoom, p.entity)
