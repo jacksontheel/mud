@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 
 	"example.com/mud/world/entities"
@@ -8,6 +9,12 @@ import (
 
 type Inventory struct {
 	children *Children
+}
+
+func NewInventory() *Inventory {
+	return &Inventory{
+		children: NewChildren(),
+	}
 }
 
 var _ entities.Component = &Inventory{}
@@ -20,15 +27,25 @@ func (i *Inventory) Id() entities.ComponentType {
 func (i *Inventory) Copy() entities.Component {
 	inventory := NewInventory()
 	for _, child := range i.children.GetChildren() {
-		inventory.children.AddChild(child)
+		inventory.AddChild(child)
 	}
 	return inventory
 }
 
-func NewInventory() *Inventory {
-	return &Inventory{
-		children: NewChildren(),
+func (i *Inventory) AddChild(child *entities.Entity) error {
+	err := i.GetChildren().AddChild(child)
+	if err != nil {
+		return fmt.Errorf("Inventory add child: %w", err)
 	}
+
+	child.Parent = i
+
+	return nil
+}
+
+func (i *Inventory) RemoveChild(child *entities.Entity) {
+	child.Parent = nil
+	i.GetChildren().RemoveChild(child)
 }
 
 func (i *Inventory) GetChildren() entities.IChildren {

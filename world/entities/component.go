@@ -56,6 +56,9 @@ type Component interface {
 }
 
 type ComponentWithChildren interface {
+	AddChild(child *Entity) error
+	RemoveChild(child *Entity)
+
 	GetChildren() IChildren
 }
 
