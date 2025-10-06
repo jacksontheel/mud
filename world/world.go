@@ -24,7 +24,7 @@ func NewWorld(entityMap map[string]*entities.Entity) *World {
 }
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
-	player := NewPlayer(name, w, w.entityMap["BalkingCrow"])
+	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
 
 	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
 		room.AddChild(player.entity)
