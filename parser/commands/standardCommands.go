@@ -85,3 +85,15 @@ var whisperCommand = models.CommandDefinition{
 		},
 	},
 }
+
+var mapCommand = models.CommandDefinition{
+	Name:    "map",
+	Aliases: []string{"map", "m"},
+	Patterns: []models.CommandPattern{
+		{
+			Tokens: []models.PatToken{
+				models.Lit("map"),
+			},
+		},
+	},
+}

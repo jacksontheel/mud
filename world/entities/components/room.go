@@ -54,6 +54,10 @@ func (r *Room) GetChildren() entities.IChildren {
 	return r.children
 }
 
+func (r *Room) GetExits() map[string]string {
+	return r.exits
+}
+
 func (r *Room) SetExits(exits map[string]string) {
 	r.exits = exits
 }

@@ -343,7 +343,7 @@ func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern,
 		case "noMatch":
 			p.NoMatchMessage = *f.Value.String
 		default:
-			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %w", def.Fields)
+			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %s", f.Key)
 			return nil, err
 		}
 	}

@@ -22,7 +22,7 @@ type Entity struct {
 	Parent      ComponentWithChildren
 }
 
-func NewEntity(name string, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
+func NewEntity(name, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
 	return &Entity{
 		components:  map[reflect.Type]Component{},
 		Name:        name,
