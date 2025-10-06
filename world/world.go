@@ -70,6 +70,8 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 		return player.Whisper(cmd.Params["target"], cmd.Params["message"])
 	case "inventory":
 		return player.Inventory()
+	case "map":
+		return player.Map()
 	}
 
 	// see if it has target

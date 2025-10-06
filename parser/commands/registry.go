@@ -39,6 +39,7 @@ func RegisterBuiltInCommands() error {
 		&moveCommand,
 		&sayCommand,
 		&whisperCommand,
+		&mapCommand,
 	})
 }
 
