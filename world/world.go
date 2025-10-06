@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"example.com/mud/models"
 	"example.com/mud/parser"
 	"example.com/mud/utils"
 	"example.com/mud/world/entities"
@@ -111,7 +112,7 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 
 	roomDescription := strings.TrimSpace(r.Description)
 	b.WriteString(roomDescription)
-	b.WriteString(" ")
+	b.WriteString("\n")
 
 	for _, e := range room.GetChildren().GetChildren() {
 		if e == exclude {
@@ -123,8 +124,8 @@ func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity)
 			return "", err
 		}
 
-		b.WriteString(description)
-		b.WriteString(" ")
+		b.WriteString(fmt.Sprintf("%s%s", models.Tab, description))
+		b.WriteString("\n")
 	}
 
 	b.WriteString("\n")

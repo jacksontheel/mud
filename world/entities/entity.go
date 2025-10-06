@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"example.com/mud/models"
 	"example.com/mud/utils"
 )
 
@@ -97,23 +98,23 @@ func (e *Entity) GetDescription() (string, error) {
 		return "", fmt.Errorf("could not format description for entity '%s': %w", e.Name, err)
 	}
 
-	b.WriteString(formatted)
+	b.WriteString(fmt.Sprintf("- %s", formatted))
 
 	for _, cwc := range e.GetComponentsWithChildren() {
 		if !cwc.GetChildren().GetRevealed() {
 			continue
 		}
 
-		b.WriteString(" ")
 		children := cwc.GetChildren().GetChildren()
 		if len(children) == 0 {
 			continue
 		}
 
 		var childB strings.Builder
+		childB.WriteString("\n")
 
-		childB.WriteString(cwc.GetChildren().GetPrefix())
-		childB.WriteString(" (")
+		childB.WriteString(fmt.Sprintf("%s%s", models.Tab, cwc.GetChildren().GetPrefix()))
+		childB.WriteString(" (\n")
 
 		for _, child := range children {
 			cDescription, err := child.GetDescription()
@@ -121,13 +122,13 @@ func (e *Entity) GetDescription() (string, error) {
 				return "", fmt.Errorf("could not format description for entity '%s': %w", child.Name, err)
 			}
 
-			childB.WriteString(cDescription)
-			childB.WriteString(" ")
+			childB.WriteString(fmt.Sprintf("%s%s%s", models.Tab, models.Tab, cDescription))
+			childB.WriteString("\n")
 		}
 
-		b.WriteString(strings.TrimSuffix(childB.String(), " "))
+		b.WriteString(childB.String())
 
-		b.WriteString(")")
+		b.WriteString(fmt.Sprintf("%s)", models.Tab))
 	}
 
 	return b.String(), nil
