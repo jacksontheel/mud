@@ -37,64 +37,82 @@ var cardinalDelta = map[string]coord{
 	"west":  {-1, 0},
 }
 
-type mapper struct {
-	coordByRoom map[*components.Room]coord
-	roomAtCoord map[coord]*components.Room
-	maxDepth    int
-	world       *World
-}
+// fixed-order so random ranging over map doesn't influence mapping
+var dirOrder = []string{"north", "east", "south", "west"}
 
 func assignCoordinates(start *entities.Entity, world *World, maxDepth int) (map[*components.Room]coord, error) {
-	m := &mapper{
-		coordByRoom: make(map[*components.Room]coord),
-		roomAtCoord: make(map[coord]*components.Room),
-		maxDepth:    maxDepth,
-		world:       world,
+	coordByRoom := make(map[*components.Room]coord)
+	roomAtCoord := make(map[coord]*components.Room)
+	seen := make(map[*components.Room]bool)
+
+	type item struct {
+		e     *entities.Entity
+		x, y  int
+		depth int
 	}
 
-	err := m.visit(start, 0, 0, 0)
-	return m.coordByRoom, err
-}
+	// queue with index-based pop (no O(n) slice shifting)
+	queue := []item{{e: start, x: 0, y: 0, depth: 0}}
+	head := 0
 
-func (m *mapper) visit(e *entities.Entity, x, y, depth int) error {
-	if depth > m.maxDepth {
-		return nil
-	}
+	for head < len(queue) {
+		it := queue[head]
+		head++
 
-	// require visited entity to be a room
-	r, err := entities.RequireComponent[*components.Room](e)
-	if err != nil {
-		return fmt.Errorf("cannot map non-room: %w", err)
-	}
-
-	coord := coord{x, y}
-	if existing, exists := m.roomAtCoord[coord]; exists && existing != r {
-		return fmt.Errorf("mapping non-euclidian space: %w", err)
-	}
-	if _, visited := m.coordByRoom[r]; visited {
-		return nil
-	}
-
-	m.coordByRoom[r] = coord
-	m.roomAtCoord[coord] = r
-
-	for direction, roomId := range r.GetExits() {
-		delta, ok := cardinalDelta[direction]
-		if !ok {
-			// we don't map up or down
+		if it.depth > maxDepth {
 			continue
 		}
 
-		nextRoomEntity, ok := m.world.entityMap[roomId]
-		if !ok {
-			return fmt.Errorf("entity with id '%s' does not exist: %w", roomId, err)
+		r, err := entities.RequireComponent[*components.Room](it.e)
+		if err != nil {
+			return nil, fmt.Errorf("cannot map non-room: %w", err)
+		}
+		if seen[r] {
+			continue
 		}
 
-		if err := m.visit(nextRoomEntity, x+delta.X, y+delta.Y, depth+1); err != nil {
-			return fmt.Errorf("recursive visit: %w", err)
+		c := coord{it.x, it.y}
+		if existing, ok := roomAtCoord[c]; ok && existing != r {
+			return nil, fmt.Errorf("mapping non-euclidean space at %v", c)
+		}
+
+		seen[r] = true
+		coordByRoom[r] = c
+		roomAtCoord[c] = r
+
+		// Expand neighbors in deterministic NESW order
+		exits := r.Exits
+		for _, dir := range dirOrder {
+			roomID, ok := exits[dir]
+			if !ok {
+				continue
+			}
+			delta := cardinalDelta[dir]
+
+			nextEntity, ok := world.entityMap[roomID]
+			if !ok {
+				return nil, fmt.Errorf("entity with id %q does not exist", roomID)
+			}
+
+			// Optional early type check (helps avoid enqueuing non-rooms)
+			nr, err := entities.RequireComponent[*components.Room](nextEntity)
+			if err != nil {
+				return nil, fmt.Errorf("cannot map non-room: %w", err)
+			}
+			if seen[nr] {
+				continue
+			}
+
+			queue = append(queue, item{
+				e:     nextEntity,
+				x:     it.x + delta.X,
+				y:     it.y + delta.Y,
+				depth: it.depth + 1,
+			})
 		}
 	}
-	return nil
+
+	return coordByRoom, nil
 }
 
 func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.Room, world *World) (string, error) {
@@ -135,10 +153,12 @@ func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.R
 		if r == currentRoom {
 			grid[gy][gx] = fmt.Sprintf("%s%s%s", models.SGR["red"], "@", models.SGR["reset"])
 		} else {
-			grid[gy][gx] = "O"
+			color := models.SGR[r.MapColor]
+			icon := r.MapIcon
+			grid[gy][gx] = fmt.Sprintf("%s%s%s", color, icon, models.SGR["reset"])
 		}
 
-		for _, roomId := range r.GetExits() {
+		for _, roomId := range r.Exits {
 			roomEntity, ok := world.entityMap[roomId]
 			if !ok {
 				return "", fmt.Errorf("entity with id '%s' does not exist", roomId)

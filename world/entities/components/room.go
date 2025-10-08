@@ -8,7 +8,10 @@ import (
 )
 
 type Room struct {
-	exits    map[string]string
+	MapIcon  string
+	MapColor string
+	Exits    map[string]string
+
 	children *Children
 }
 
@@ -17,6 +20,7 @@ var _ entities.ComponentWithChildren = &Room{}
 
 func NewRoom() *Room {
 	return &Room{
+		MapIcon:  "O",
 		children: NewChildren(),
 	}
 }
@@ -29,7 +33,9 @@ func (r *Room) Copy() entities.Component {
 	// right now copying a room's children is not supported
 	// return a room with no children
 	return &Room{
-		exits:    r.exits,
+		MapIcon:  r.MapIcon,
+		MapColor: r.MapColor,
+		Exits:    r.Exits,
 		children: NewChildren(),
 	}
 }
@@ -54,16 +60,8 @@ func (r *Room) GetChildren() entities.IChildren {
 	return r.children
 }
 
-func (r *Room) GetExits() map[string]string {
-	return r.exits
-}
-
-func (r *Room) SetExits(exits map[string]string) {
-	r.exits = exits
-}
-
 func (r *Room) GetNeighboringRoomId(direction string) (string, bool) {
-	roomId, ok := r.exits[direction]
+	roomId, ok := r.Exits[direction]
 	return roomId, ok
 }
 
@@ -71,7 +69,7 @@ func (r *Room) GetExitText() string {
 	var b strings.Builder
 	b.WriteString("Exits: ")
 
-	for exit := range r.exits {
+	for exit := range r.Exits {
 		b.WriteString(exit)
 		b.WriteString(", ")
 	}

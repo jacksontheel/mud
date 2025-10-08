@@ -33,12 +33,20 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	rm := components.NewRoom()
 	for _, f := range def.Fields {
 		switch f.Key {
+		case "icon":
+			icon := *f.Value.String
+			if len(icon) != 1 {
+				return nil, fmt.Errorf("invalid map icon '%s': must be 1 character", icon)
+			}
+			rm.MapIcon = icon
+		case "color":
+			rm.MapColor = *f.Value.String
 		case "exits":
 			m := f.Value.AsMap()
 			if m == nil {
 				m = map[string]string{}
 			}
-			rm.SetExits(m)
+			rm.Exits = m
 		case "children":
 			continue
 		default:
