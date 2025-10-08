@@ -5,6 +5,9 @@ entity LivingRoom {
     tags is ["room"]
 
     component Room {
+        icon is "L"
+        color is "magenta"
+
         exits is {
             "north": "BedRoom",
             "east": "Bathroom"
