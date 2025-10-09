@@ -63,6 +63,8 @@ type ComponentWithChildren interface {
 }
 
 type IChildren interface {
+	Copy() IChildren
+
 	SetRevealed(r bool)
 	GetRevealed() bool
 	SetPrefix(p string)

@@ -7,7 +7,7 @@ import (
 )
 
 type Container struct {
-	children *Children
+	children entities.IChildren
 }
 
 var _ entities.Component = &Container{}
@@ -23,18 +23,16 @@ func (i *Container) Id() entities.ComponentType {
 	return entities.ComponentContainer
 }
 
-func (i *Container) Copy() entities.Component {
-	Container := NewContainer()
-	for _, child := range i.children.GetChildren() {
-		Container.AddChild(child)
-	}
-	return i
+func (c *Container) Copy() entities.Component {
+	cCopy := NewContainer()
+	cCopy.children = c.children.Copy()
+	return cCopy
 }
 
 func (c *Container) AddChild(child *entities.Entity) error {
 	err := c.GetChildren().AddChild(child)
 	if err != nil {
-		return fmt.Errorf("Inventory add child: %w", err)
+		return fmt.Errorf("Container add child: %w", err)
 	}
 
 	child.Parent = c

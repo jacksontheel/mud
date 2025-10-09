@@ -19,6 +19,19 @@ func NewChildren() *Children {
 	}
 }
 
+func (c *Children) Copy() entities.IChildren {
+	copiedChildren := NewChildren()
+
+	copiedChildren.revealed = c.revealed
+	copiedChildren.prefix = c.prefix
+
+	for _, child := range c.GetChildren() {
+		copiedChildren.AddChild(child)
+	}
+
+	return copiedChildren
+}
+
 func (c *Children) GetPrefix() string {
 	return c.prefix
 }

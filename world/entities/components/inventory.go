@@ -8,7 +8,7 @@ import (
 )
 
 type Inventory struct {
-	children *Children
+	children entities.IChildren
 }
 
 func NewInventory() *Inventory {
@@ -25,11 +25,9 @@ func (i *Inventory) Id() entities.ComponentType {
 }
 
 func (i *Inventory) Copy() entities.Component {
-	inventory := NewInventory()
-	for _, child := range i.children.GetChildren() {
-		inventory.AddChild(child)
-	}
-	return inventory
+	iCopy := NewInventory()
+	iCopy.children = i.children.Copy()
+	return iCopy
 }
 
 func (i *Inventory) AddChild(child *entities.Entity) error {

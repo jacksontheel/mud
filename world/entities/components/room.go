@@ -12,7 +12,7 @@ type Room struct {
 	MapColor string
 	Exits    map[string]string
 
-	children *Children
+	children entities.IChildren
 }
 
 var _ entities.Component = &Room{}
