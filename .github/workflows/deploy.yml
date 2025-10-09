@@ -1,9 +1,8 @@
-
 name: Build and Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    # branches: [ "main" ]
 
 permissions:
   contents: read
@@ -30,14 +29,8 @@ jobs:
 
       - name: Build server
         run: |
-          mkdir -p ${{ env.RELEASE_DIR }}
-          go build -o ${{ env.RELEASE_DIR }}/mud-server
-
-      - name: Bundle data into release
-        run: |
-          mkdir -p ${{ env.RELEASE_DIR }}/data
-          # copy everything you want packaged with the release
-          cp -r data/* ${{ env.RELEASE_DIR }}/data/ || true
+          mkdir -p "${{ env.RELEASE_DIR }}"
+          go build -o "${{ env.RELEASE_DIR }}/mud-server"
 
       - name: Upload release to server
         uses: appleboy/scp-action@v0.1.7
@@ -58,23 +51,31 @@ jobs:
             set -euo pipefail
 
             RELEASE_PATH="${{ env.REMOTE_RELEASES }}/${{ env.RELEASE_DIR }}"
-            CURRENT_LINK="${{ env.REMOTE_CURRENT }}"
+            CURRENT_DIR="${{ env.REMOTE_CURRENT }}"
             APP_DIR="${{ env.REMOTE_APP_DIR }}"
             SERVICE="${{ env.SERVICE_NAME }}"
 
-            # Ensure base dirs exist & ownership
-            sudo mkdir -p "${APP_DIR}" "${{ env.REMOTE_RELEASES }}"
+            # Ensure base dirs exist
+            sudo mkdir -p "${APP_DIR}" "${{ env.REMOTE_RELEASES }}" "${CURRENT_DIR}"
+            # Ensure a data directory exists in current (managed outside CI/CD)
+            sudo mkdir -p "${CURRENT_DIR}/data"
+
             sudo chown -R mud:mud "${APP_DIR}"
             sudo chown -R mud:mud "${RELEASE_PATH}"
-
-            # Atomically switch current -> new release
-            if [ -L "${CURRENT_LINK}" ] || [ -e "${CURRENT_LINK}" ]; then
-              sudo rm -f "${CURRENT_LINK}"
-            fi
-            sudo ln -s "${RELEASE_PATH}" "${CURRENT_LINK}"
+            sudo chown -R mud:mud "${CURRENT_DIR}"
 
             # Make sure binary is executable
-            sudo chmod +x "${CURRENT_LINK}/mud-server"
+            sudo chmod +x "${RELEASE_PATH}/mud-server"
+
+            # Inside CURRENT_DIR:
+            # - 'release' symlink points to the newly uploaded release dir
+            # - 'mud-server' symlink points to ./release/mud-server
+            sudo -u mud ln -sfn "${RELEASE_PATH}" "${CURRENT_DIR}/release"
+            sudo -u mud ln -sfn "release/mud-server" "${CURRENT_DIR}/mud-server"
+
+            # (Optional) keep a 'previous' pointer for quick rollback:
+            # if [ -L "${CURRENT_DIR}/previous" ]; then sudo -u mud rm -f "${CURRENT_DIR}/previous"; fi
+            # sudo -u mud ln -sfn "${RELEASE_PATH}" "${CURRENT_DIR}/previous"
 
             # Restart service
             sudo systemctl daemon-reload
