@@ -68,10 +68,8 @@ jobs:
             sudo chmod +x "${RELEASE_PATH}/mud-server"
 
             # Inside CURRENT_DIR:
-            # - 'release' symlink points to the newly uploaded release dir
-            # - 'mud-server' symlink points to ./release/mud-server
-            sudo -u mud ln -sfn "${RELEASE_PATH}" "${CURRENT_DIR}/release"
-            sudo -u mud ln -sfn "release/mud-server" "${CURRENT_DIR}/mud-server"
+            # 'mud-server' symlink points to mud-server in release path
+            sudo -u mud ln -sfn "${RELEASE_PATH}/mud-server" "${CURRENT_DIR}/mud-server"
 
             # (Optional) keep a 'previous' pointer for quick rollback:
             # if [ -L "${CURRENT_DIR}/previous" ]; then sudo -u mud rm -f "${CURRENT_DIR}/previous"; fi
