@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 
+	"example.com/mud/config"
 	"example.com/mud/dsl"
 	"example.com/mud/parser/commands"
 	"example.com/mud/world"
@@ -104,20 +105,31 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *wor
 }
 
 func main() {
+	// load configuration file
+	cfg, err := config.Load("config.yaml")
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
 	entityMap, cmds, err := dsl.LoadEntitiesFromDirectory("data/")
 	if err != nil {
-		log.Fatalf("Failed to load DSL entities: %v", err)
+		log.Fatalf("failed to load DSL entities: %v", err)
+	}
+
+	// validate starting room exists in entity map
+	if _, ok := entityMap[cfg.StartingRoom]; !ok {
+		log.Fatalf("room '%s' does not exist in world.", cfg.StartingRoom)
 	}
 
 	if err := commands.RegisterBuiltInCommands(); err != nil {
-		panic(fmt.Errorf("failed to register built-in commands: %w", err))
+		log.Fatalf("failed to register built-in commands: %v", err)
 	}
 
 	if err := commands.RegisterCommands(cmds); err != nil {
-		panic(fmt.Errorf("failed to register DSL commands: %w", err))
+		log.Fatalf("failed to register DSL commands: %v", err)
 	}
 
-	gameWorld := world.NewWorld(entityMap)
+	gameWorld := world.NewWorld(entityMap, cfg.StartingRoom)
 
 	listener, err := net.Listen("tcp", ":4000")
 	if err != nil {

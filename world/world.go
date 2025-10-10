@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"example.com/mud/models"
@@ -12,19 +13,26 @@ import (
 )
 
 type World struct {
-	entityMap map[string]*entities.Entity
-	bus       *Bus
+	entityMap    map[string]*entities.Entity
+	startingRoom string
+	bus          *Bus
 }
 
-func NewWorld(entityMap map[string]*entities.Entity) *World {
+func NewWorld(entityMap map[string]*entities.Entity, startingRoom string) *World {
 	return &World{
-		entityMap: entityMap,
-		bus:       NewBus(),
+		entityMap:    entityMap,
+		startingRoom: startingRoom,
+		bus:          NewBus(),
 	}
 }
 
 func (w *World) AddPlayer(name string, inbox chan string) *Player {
-	player := NewPlayer(name, w, w.entityMap["LivingRoom"])
+	startingRoom, ok := w.entityMap[w.startingRoom]
+	if !ok {
+		log.Fatalf("add player: room '%s' does not exist in world.", w.startingRoom)
+	}
+
+	player := NewPlayer(name, w, startingRoom)
 
 	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
 		room.AddChild(player.entity)
