@@ -11,6 +11,7 @@ import (
 	"example.com/mud/dsl"
 	"example.com/mud/parser/commands"
 	"example.com/mud/world"
+	"example.com/mud/world/player"
 )
 
 func handleConnection(conn net.Conn, gameWorld *world.World) {
@@ -27,7 +28,7 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 		name, _ = reader.ReadString('\n')
 		name = strings.TrimSpace(name)
 
-		vdn := world.NameValidation(name)
+		vdn := player.NameValidation(name)
 		if vdn != "" {
 			fmt.Fprint(conn, vdn)
 			continue
@@ -36,14 +37,23 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 	}
 
 	inbox := make(chan string, 64)
-	player := gameWorld.AddPlayer(name, inbox)
-
-	message, err := player.OpeningMessage()
+	player, err := gameWorld.AddPlayer(name, inbox)
 	if err != nil {
-		err := fmt.Errorf("error received: %w", err)
+		err := fmt.Errorf("error adding player: %w", err)
 
 		fmt.Println(err.Error())
 		fmt.Fprintln(conn, err.Error())
+		return
+	}
+
+	message, err := player.OpeningMessage()
+	if err != nil {
+		err := fmt.Errorf("error printing opening message: %w", err)
+
+		fmt.Println(err.Error())
+		fmt.Fprintln(conn, err.Error())
+
+		return
 	} else {
 		fmt.Fprintln(conn, message)
 	}
@@ -71,7 +81,7 @@ func handleConnectionIncoming(conn net.Conn, inbox chan string) {
 	}()
 }
 
-func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *world.Player) {
+func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *player.Player) {
 	scanner := bufio.NewScanner(conn)
 	for {
 		if !scanner.Scan() {
