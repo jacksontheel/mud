@@ -19,6 +19,7 @@ func NewChildren() *Children {
 	}
 }
 
+// copy handles fields, but not children
 func (c *Children) Copy() entities.IChildren {
 	copiedChildren := NewChildren()
 

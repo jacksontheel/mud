@@ -25,8 +25,14 @@ func (i *Inventory) Id() entities.ComponentType {
 }
 
 func (i *Inventory) Copy() entities.Component {
-	iCopy := NewInventory()
-	iCopy.children = i.children.Copy()
+	iCopy := &Inventory{
+		children: i.children.Copy(),
+	}
+
+	for _, child := range i.children.GetChildren() {
+		iCopy.AddChild(child)
+	}
+
 	return iCopy
 }
 

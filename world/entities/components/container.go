@@ -24,8 +24,14 @@ func (i *Container) Id() entities.ComponentType {
 }
 
 func (c *Container) Copy() entities.Component {
-	cCopy := NewContainer()
-	cCopy.children = c.children.Copy()
+	cCopy := &Container{
+		children: c.children.Copy(),
+	}
+
+	for _, child := range c.children.GetChildren() {
+		cCopy.AddChild(child)
+	}
+
 	return cCopy
 }
 
