@@ -1,4 +1,4 @@
-package world
+package player
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 )
 
 func (p *Player) Map() (string, error) {
-	coordByRoom, err := assignCoordinates(p.currentRoom, p.world, 5)
+	coordByRoom, err := assignCoordinates(p.CurrentRoom, p.world, 5)
 	if err != nil {
 		return "", fmt.Errorf("map: assign coordinates: %w", err)
 	}
 
-	currentRoom, err := entities.RequireComponent[*components.Room](p.currentRoom)
+	currentRoom, err := entities.RequireComponent[*components.Room](p.CurrentRoom)
 	if err != nil {
 		return "", fmt.Errorf("cannot map non-room area: %w", err)
 	}
@@ -40,7 +40,7 @@ var cardinalDelta = map[string]coord{
 // fixed-order so random ranging over map doesn't influence mapping
 var dirOrder = []string{"north", "east", "south", "west"}
 
-func assignCoordinates(start *entities.Entity, world *World, maxDepth int) (map[*components.Room]coord, error) {
+func assignCoordinates(start *entities.Entity, world World, maxDepth int) (map[*components.Room]coord, error) {
 	coordByRoom := make(map[*components.Room]coord)
 	roomAtCoord := make(map[coord]*components.Room)
 	seen := make(map[*components.Room]bool)
@@ -89,7 +89,7 @@ func assignCoordinates(start *entities.Entity, world *World, maxDepth int) (map[
 			}
 			delta := cardinalDelta[dir]
 
-			nextEntity, ok := world.entityMap[roomID]
+			nextEntity, ok := world.GetEntityById(roomID)
 			if !ok {
 				return nil, fmt.Errorf("entity with id %q does not exist", roomID)
 			}
@@ -115,7 +115,7 @@ func assignCoordinates(start *entities.Entity, world *World, maxDepth int) (map[
 	return coordByRoom, nil
 }
 
-func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.Room, world *World) (string, error) {
+func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.Room, world World) (string, error) {
 	if len(coordByRoom) == 0 {
 		return "", nil
 	}
@@ -159,7 +159,7 @@ func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.R
 		}
 
 		for _, roomId := range r.Exits {
-			roomEntity, ok := world.entityMap[roomId]
+			roomEntity, ok := world.GetEntityById("roomId")
 			if !ok {
 				return "", fmt.Errorf("entity with id '%s' does not exist", roomId)
 			}

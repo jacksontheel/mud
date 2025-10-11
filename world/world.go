@@ -3,13 +3,11 @@ package world
 import (
 	"fmt"
 	"log"
-	"strings"
 
-	"example.com/mud/models"
 	"example.com/mud/parser"
-	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
+	"example.com/mud/world/player"
 )
 
 type World struct {
@@ -26,42 +24,52 @@ func NewWorld(entityMap map[string]*entities.Entity, startingRoom string) *World
 	}
 }
 
-func (w *World) AddPlayer(name string, inbox chan string) *Player {
+func (w *World) EntitiesById() map[string]*entities.Entity { return w.entityMap }
+
+func (w *World) AddPlayer(name string, inbox chan string) (*player.Player, error) {
 	startingRoom, ok := w.entityMap[w.startingRoom]
 	if !ok {
 		log.Fatalf("add player: room '%s' does not exist in world.", w.startingRoom)
 	}
 
-	player := NewPlayer(name, w, startingRoom)
-
-	if room, ok := entities.GetComponent[*components.Room](player.currentRoom); ok {
-		room.AddChild(player.entity)
+	newPlayer, err := player.NewPlayer(name, w, startingRoom)
+	if err != nil {
+		return nil, fmt.Errorf("could not create player '%s': %w", name, err)
 	}
 
-	w.bus.Subscribe(player.currentRoom, player.entity, inbox)
-	w.Publish(player, fmt.Sprintf("%s enters the room.", player.name))
-
-	return player
-}
-
-func (w *World) Bus() *Bus { return w.bus }
-
-func (w *World) EntitiesById() map[string]*entities.Entity { return w.entityMap }
-
-func (w *World) DisconnectPlayer(p *Player) {
-	if room, ok := entities.GetComponent[*components.Room](p.currentRoom); ok {
-		room.RemoveChild(p.entity)
+	if room, ok := entities.GetComponent[*components.Room](newPlayer.CurrentRoom); ok {
+		room.AddChild(newPlayer.Entity)
 	}
 
-	w.bus.Unsubscribe(p.currentRoom, p.entity)
-	w.Publish(p, fmt.Sprintf("%s leaves the room.", p.name))
+	w.bus.Subscribe(newPlayer.CurrentRoom, newPlayer.Entity, inbox)
+	w.Publish(newPlayer.CurrentRoom, fmt.Sprintf("%s enters the room.", newPlayer.Name), []*entities.Entity{newPlayer.Entity})
+
+	return newPlayer, nil
 }
 
-func (w *World) Publish(player *Player, message string) {
-	w.bus.Publish(player.currentRoom, message, []*entities.Entity{player.entity})
+func (w *World) DisconnectPlayer(p *player.Player) {
+	if room, ok := entities.GetComponent[*components.Room](p.CurrentRoom); ok {
+		room.RemoveChild(p.Entity)
+	}
+
+	w.bus.Unsubscribe(p.CurrentRoom, p.Entity)
+	w.Publish(p.CurrentRoom, fmt.Sprintf("%s leaves the room.", p.Name), []*entities.Entity{p.Entity})
 }
 
-func (w *World) Parse(player *Player, line string) (string, error) {
+func (w *World) GetEntityById(id string) (*entities.Entity, bool) {
+	entity, ok := w.entityMap[id]
+	return entity, ok
+}
+
+func (w *World) Publish(room *entities.Entity, text string, exclude []*entities.Entity) {
+	w.bus.Publish(room, text, exclude)
+}
+
+func (w *World) PublishTo(room *entities.Entity, recipient *entities.Entity, text string) {
+	w.bus.PublishTo(room, recipient, text)
+}
+
+func (w *World) Parse(p *player.Player, line string) (string, error) {
 	cmd := parser.Parse(line)
 	if cmd == nil {
 		return "What in the nine hells?", nil
@@ -69,26 +77,26 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 
 	switch cmd.Kind {
 	case "move":
-		return player.Move(cmd.Params["direction"])
+		return p.Move(cmd.Params["direction"])
 	case "look":
-		return player.Look(cmd.Params["target"])
+		return p.Look(cmd.Params["target"])
 	case "say":
-		return player.Say(cmd.Params["message"]), nil
+		return p.Say(cmd.Params["message"]), nil
 	case "whisper":
-		return player.Whisper(cmd.Params["target"], cmd.Params["message"])
+		return p.Whisper(cmd.Params["target"], cmd.Params["message"])
 	case "inventory":
-		return player.Inventory()
+		return p.Inventory()
 	case "map":
-		return player.Map()
+		return p.Map()
 	}
 
 	// see if it has target
 	if target := cmd.Params["target"]; target != "" {
 		if instrument := cmd.Params["instrument"]; instrument != "" {
-			response, err := player.actUponWith(cmd.Kind, target, instrument, cmd.NoMatchMessage)
+			response, err := p.ActUponWith(cmd.Kind, target, instrument, cmd.NoMatchMessage)
 			return response, err
 		} else {
-			response, err := player.actUpon(cmd.Kind, target, cmd.NoMatchMessage)
+			response, err := p.ActUpon(cmd.Kind, target, cmd.NoMatchMessage)
 			return response, err
 		}
 	}
@@ -96,49 +104,36 @@ func (w *World) Parse(player *Player, line string) (string, error) {
 	return "What the hell are you talking about?", nil
 }
 
-func (w *World) GetNeighboringRoom(r *components.Room, direction string) *entities.Entity {
+func (w *World) MovePlayer(p *player.Player, direction string) (string, error) {
+	playerRoom, err := entities.RequireComponent[*components.Room](p.CurrentRoom)
+	if err != nil {
+		return "", fmt.Errorf("move for player '%s': %w", p.Name, err)
+	}
+
+	newRoom := w.getNeighboringRoom(playerRoom, direction)
+	if newRoom != nil {
+		w.Publish(p.CurrentRoom, fmt.Sprintf("%s leaves the room.", p.Name), []*entities.Entity{p.Entity})
+
+		playerRoom.RemoveChild(p.Entity)
+		p.CurrentRoom = newRoom
+
+		if room, ok := entities.GetComponent[*components.Room](p.CurrentRoom); ok {
+			room.AddChild(p.Entity)
+		}
+
+		w.bus.Move(p.CurrentRoom, p.Entity)
+		w.Publish(p.CurrentRoom, fmt.Sprintf("%s enters the room.", p.Name), []*entities.Entity{p.Entity})
+
+		return p.GetRoomDescription()
+	}
+
+	return "You can't go there.", nil
+}
+
+func (w *World) getNeighboringRoom(r *components.Room, direction string) *entities.Entity {
 	if roomId, ok := r.GetNeighboringRoomId(direction); ok {
 		room := w.entityMap[roomId]
 		return room
 	}
 	return nil
-}
-
-func (w *World) GetRoomDescription(r *entities.Entity, exclude *entities.Entity) (string, error) {
-	var b strings.Builder
-
-	room, err := entities.RequireComponent[*components.Room](r)
-	if err != nil {
-		return "", err
-	}
-
-	formattedTitle, err := utils.FormatText(fmt.Sprintf("{'%s' | bold | red}", r.Name), map[string]string{})
-	if err != nil {
-		return "", fmt.Errorf("could not format room '%s' name: %w", r.Name, err)
-	}
-
-	b.WriteString(formattedTitle)
-	b.WriteString("\n")
-
-	roomDescription := strings.TrimSpace(r.Description)
-	b.WriteString(roomDescription)
-	b.WriteString("\n")
-
-	for _, e := range room.GetChildren().GetChildren() {
-		if e == exclude {
-			continue
-		}
-
-		description, err := e.GetDescription()
-		if err != nil {
-			return "", err
-		}
-
-		b.WriteString(fmt.Sprintf("%s%s", models.Tab, description))
-		b.WriteString("\n")
-	}
-
-	b.WriteString("\n")
-	b.WriteString(room.GetExitText())
-	return b.String(), nil
 }
