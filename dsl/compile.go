@@ -231,7 +231,8 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			if err != nil {
 				return nil, err
 			}
-			rulesByCommand[block.Reaction.Command] = append(rulesByCommand[block.Reaction.Command], rules...)
+			// rules at the entity level come first
+			rulesByCommand[block.Reaction.Command] = append(rules, rulesByCommand[block.Reaction.Command]...)
 		} else if block.Component != nil {
 			// process component into prototype without children
 			comp, err := processComponentPrototype(block.Component)
@@ -248,6 +249,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 
 			components = append(components, loweredTrait.components...)
 			for command, traitRules := range loweredTrait.rulesByCommand {
+				// rules at the trait level come second
 				rulesByCommand[command] = append(rulesByCommand[command], traitRules...)
 			}
 		} else if block.Field != nil {
