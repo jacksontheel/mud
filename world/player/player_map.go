@@ -22,7 +22,7 @@ func (p *Player) Map() (string, error) {
 
 	ascii, err := renderMap(coordByRoom, currentRoom, p.world)
 	if err != nil {
-		return "", fmt.Errorf("map: render ascii: %w", err)
+		return "", fmt.Errorf("map: render map: %w", err)
 	}
 
 	return ascii, nil
@@ -159,7 +159,7 @@ func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.R
 		}
 
 		for _, roomId := range r.Exits {
-			roomEntity, ok := world.GetEntityById("roomId")
+			roomEntity, ok := world.GetEntityById(roomId)
 			if !ok {
 				return "", fmt.Errorf("entity with id '%s' does not exist", roomId)
 			}

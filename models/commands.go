@@ -8,6 +8,7 @@ type CommandDefinition struct {
 
 type CommandPattern struct {
 	Tokens         []PatToken
+	HelpMessage    string
 	NoMatchMessage string
 }
 
