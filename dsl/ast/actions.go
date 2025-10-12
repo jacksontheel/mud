@@ -6,6 +6,7 @@ type ActionDef struct {
 	Copy                 *CopyAction           `| "copy" @@`
 	Move                 *MoveAction           `| "move" @@`
 	SetField             *SetFieldAction       `| "set" @@`
+	DestroyAction        *DestroyAction        `| "destroy" @@`
 	RevealChildrenAction *RevealChildrenAction `| @@`
 }
 
@@ -40,4 +41,8 @@ type RevealChildrenAction struct {
 	Set       string `@("reveal" | "hide")`
 	Role      string `@Ident`
 	Component string `"." @Ident`
+}
+
+type DestroyAction struct {
+	Role string `@Ident`
 }
