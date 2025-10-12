@@ -632,13 +632,22 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 		} else if aDef.SetField != nil {
 			role, err := entities.ParseEventRole(aDef.SetField.Role)
 			if err != nil {
-				return nil, fmt.Errorf("event roles equal condition: %w", err)
+				return nil, fmt.Errorf("event set field action: %w", err)
 			}
 
 			newAction = &actions.SetField{
 				Role:  role,
 				Field: aDef.SetField.Field,
 				Value: aDef.SetField.Value.Parse(),
+			}
+		} else if aDef.DestroyAction != nil {
+			role, err := entities.ParseEventRole(aDef.DestroyAction.Role)
+			if err != nil {
+				return nil, fmt.Errorf("event destroy action: %w", err)
+			}
+
+			newAction = &actions.Destroy{
+				Role: role,
 			}
 		} else if aDef.RevealChildrenAction != nil {
 			role, err := entities.ParseEventRole(aDef.RevealChildrenAction.Role)
