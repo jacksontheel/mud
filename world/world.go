@@ -3,8 +3,10 @@ package world
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"example.com/mud/parser"
+	"example.com/mud/parser/commands"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 	"example.com/mud/world/player"
@@ -76,6 +78,8 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 	}
 
 	switch cmd.Kind {
+	case "help":
+		return w.HelpMessage(cmd.Params["command"]), nil
 	case "move":
 		return p.Move(cmd.Params["direction"])
 	case "look":
@@ -102,6 +106,53 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 	}
 
 	return "What the hell are you talking about?", nil
+}
+
+func (w *World) HelpMessage(command string) string {
+	if command == "" {
+		return w.HelpGeneral()
+	}
+
+	canonical, ok := commands.VerbAliases[command]
+	if !ok {
+		return fmt.Sprintf("Unrecognized command: %s", command)
+	}
+
+	var b strings.Builder
+
+	for _, p := range commands.Patterns {
+		if strings.ToLower(p.Kind) == canonical {
+			b.WriteString("- ")
+			b.WriteString(p.String())
+
+			if p.HelpMessage != "" {
+				b.WriteString(": ")
+				b.WriteString(p.HelpMessage)
+			}
+
+			b.WriteString("\n")
+		}
+	}
+
+	return b.String()
+}
+
+func (w *World) HelpGeneral() string {
+	var b strings.Builder
+
+	for _, p := range commands.Patterns {
+		b.WriteString("- ")
+		b.WriteString(p.String())
+
+		if p.HelpMessage != "" {
+			b.WriteString(": ")
+			b.WriteString(p.HelpMessage)
+		}
+
+		b.WriteString("\n")
+	}
+
+	return b.String()
 }
 
 func (w *World) MovePlayer(p *player.Player, direction string) (string, error) {

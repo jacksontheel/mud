@@ -34,6 +34,7 @@ var Patterns = []models.Pattern{}
 
 func RegisterBuiltInCommands() error {
 	return RegisterCommands([]*models.CommandDefinition{
+		&helpCommand,
 		&inventoryCommand,
 		&lookCommand,
 		&moveCommand,
@@ -60,6 +61,7 @@ func RegisterCommands(defs []*models.CommandDefinition) error {
 			Patterns = append(Patterns, models.Pattern{
 				Kind:           cd.Name,
 				Tokens:         pat.Tokens,
+				HelpMessage:    pat.HelpMessage,
 				NoMatchMessage: pat.NoMatchMessage,
 			})
 		}

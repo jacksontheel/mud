@@ -344,6 +344,8 @@ func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern,
 			p.Tokens = tokenizeCommandSyntax(*f.Value.String)
 		case "noMatch":
 			p.NoMatchMessage = *f.Value.String
+		case "help":
+			p.HelpMessage = *f.Value.String
 		default:
 			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %s", f.Key)
 			return nil, err
