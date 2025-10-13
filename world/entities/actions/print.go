@@ -46,7 +46,9 @@ func (p *Print) Execute(ev *entities.Event) error {
 }
 
 func fillFormatMap(ev *entities.Event) map[string]string {
-	out := make(map[string]string, 3)
+	out := make(map[string]string, 4)
+
+	out[entities.EventRoleMessage.String()] = ev.Message
 
 	if ev.Source != nil {
 		out[entities.EventRoleSource.String()] = ev.Source.Name

@@ -84,10 +84,6 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 		return p.Move(cmd.Params["direction"])
 	case "look":
 		return p.Look(cmd.Params["target"])
-	case "say":
-		return p.Say(cmd.Params["message"]), nil
-	case "whisper":
-		return p.Whisper(cmd.Params["target"], cmd.Params["message"])
 	case "inventory":
 		return p.Inventory()
 	case "map":
@@ -99,10 +95,19 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 		if instrument := cmd.Params["instrument"]; instrument != "" {
 			response, err := p.ActUponWith(cmd.Kind, target, instrument, cmd.NoMatchMessage)
 			return response, err
+		} else if message := cmd.Params["message"]; message != "" {
+			response, err := p.ActUponMessage(cmd.Kind, target, message, cmd.NoMatchMessage)
+			return response, err
 		} else {
 			response, err := p.ActUpon(cmd.Kind, target, cmd.NoMatchMessage)
 			return response, err
 		}
+	}
+
+	// see if it has a message
+	if message := cmd.Params["message"]; message != "" {
+		response, err := p.ActMessage(cmd.Kind, message, cmd.NoMatchMessage)
+		return response, err
 	}
 
 	return "What the hell are you talking about?", nil

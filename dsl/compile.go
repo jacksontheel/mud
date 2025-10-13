@@ -358,7 +358,7 @@ func tokenizeCommandSyntax(s string) []models.PatToken {
 	var tokens []models.PatToken
 	parts := strings.Fields(s)
 
-	for _, part := range parts {
+	for _, part := range parts[:len(parts)-1] {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			slot := strings.Trim(part, "{}")
 			tokens = append(tokens, models.Slot(slot))
@@ -366,6 +366,19 @@ func tokenizeCommandSyntax(s string) []models.PatToken {
 			tokens = append(tokens, models.Lit(part))
 		}
 	}
+
+	lastPart := parts[len(parts)-1]
+	if strings.HasPrefix(lastPart, "{") && strings.HasSuffix(lastPart, "}") {
+		slot := strings.Trim(lastPart, "{}")
+		if strings.Contains(slot, "...") {
+			tokens = append(tokens, models.SlotRest(strings.TrimSuffix(slot, "...")))
+		} else {
+			tokens = append(tokens, models.Slot(slot))
+		}
+	} else {
+		tokens = append(tokens, models.Lit(lastPart))
+	}
+
 	return tokens
 }
 
@@ -564,6 +577,10 @@ func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 			ParentRole:    parentRole,
 			ComponentType: component,
 			ChildRole:     childRole,
+		}
+	} else if def.MessageContains != nil {
+		newCondition = &conditions.MessageContains{
+			MessageRegex: strings.ToLower(def.MessageContains.Message),
 		}
 	} else {
 		return nil, fmt.Errorf("condition in when is empty")
