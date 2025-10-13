@@ -82,37 +82,6 @@ var moveCommand = models.CommandDefinition{
 	},
 }
 
-var sayCommand = models.CommandDefinition{
-	Name:    "say",
-	Aliases: []string{"say"},
-	Patterns: []models.CommandPattern{
-		{
-			Tokens: []models.PatToken{
-				models.Lit("say"),
-				models.SlotRest("message"),
-			},
-			HelpMessage:    "Say something out loud to other player's in your room.",
-			NoMatchMessage: "That's not allowed! (Source: sayCommand)",
-		},
-	},
-}
-
-var whisperCommand = models.CommandDefinition{
-	Name:    "whisper",
-	Aliases: []string{"whisper"},
-	Patterns: []models.CommandPattern{
-		{
-			Tokens: []models.PatToken{
-				models.Lit("whisper"),
-				models.Slot("target"),
-				models.SlotRest("message"),
-			},
-			HelpMessage:    "Say something to a specific player in your room.",
-			NoMatchMessage: "It doesn't seem to hear you.",
-		},
-	},
-}
-
 var mapCommand = models.CommandDefinition{
 	Name:    "map",
 	Aliases: []string{"map", "m"},

@@ -56,8 +56,28 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	return rm, nil
 }
 
-func buildInventory(_ *ast.ComponentDef) (entities.Component, error) {
+func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
 	inventory := components.NewInventory()
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "prefix":
+			prefix := f.Value.String
+			if prefix == nil {
+				return nil, fmt.Errorf("container: prefix must be string")
+			}
+			inventory.GetChildren().SetPrefix(*prefix)
+		case "revealed":
+			revealed := f.Value.Bool
+			if revealed == nil {
+				return nil, fmt.Errorf("container: revealed must be a boolean")
+			}
+			inventory.GetChildren().SetRevealed(*revealed == "true")
+		case "children":
+			continue
+		default:
+			return nil, fmt.Errorf("room: unknown field %s", f.Key)
+		}
+	}
 	return inventory, nil
 }
 

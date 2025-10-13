@@ -38,8 +38,6 @@ func RegisterBuiltInCommands() error {
 		&inventoryCommand,
 		&lookCommand,
 		&moveCommand,
-		&sayCommand,
-		&whisperCommand,
 		&mapCommand,
 	})
 }

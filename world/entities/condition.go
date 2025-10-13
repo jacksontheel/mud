@@ -9,6 +9,7 @@ const (
 	ConditionEventRolesEqual
 	ConditionHasChild
 	ConditionFieldEquals
+	ConditionMessageMatches
 )
 
 type Condition interface {

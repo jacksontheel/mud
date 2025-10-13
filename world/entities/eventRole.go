@@ -10,6 +10,7 @@ const (
 	EventRoleInstrument
 	EventRoleTarget
 	EventRoleRoom
+	EventRoleMessage
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	EventRoleInstrumentString = "instrument"
 	EventRoleTargetString     = "target"
 	EventRoleRoomString       = "room"
+	EventRoleMessageString    = "message"
 )
 
 func ParseEventRole(s string) (EventRole, error) {
@@ -30,6 +32,8 @@ func ParseEventRole(s string) (EventRole, error) {
 		return EventRoleTarget, nil
 	case EventRoleRoomString:
 		return EventRoleRoom, nil
+	case EventRoleMessageString:
+		return EventRoleMessage, nil
 	default:
 		return EventRoleUnknown, fmt.Errorf("unknown event role '%s'", s)
 	}
@@ -43,6 +47,10 @@ func (er EventRole) String() string {
 		return EventRoleInstrumentString
 	case EventRoleTarget:
 		return EventRoleTargetString
+	case EventRoleRoom:
+		return EventRoleRoomString
+	case EventRoleMessage:
+		return EventRoleMessageString
 	default:
 		return EventRoleUnknownString
 	}
