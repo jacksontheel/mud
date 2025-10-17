@@ -42,7 +42,7 @@ func (c *Copy) Execute(ev *entities.Event) error {
 		return fmt.Errorf("error executing copy action: %w", err)
 	}
 
-	component.GetChildren().AddChild(
+	component.AddChild(
 		ev.EntitiesById[c.EntityId].Copy(component),
 	)
 

@@ -5,24 +5,9 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"example.com/mud/models"
 )
-
-// ANSI SGR codes
-var SGR = map[string]string{
-	"reset":     "\x1b[0m",
-	"bold":      "\x1b[1m",
-	"italic":    "\x1b[3m",
-	"underline": "\x1b[4m",
-
-	"black":   "\x1b[30m",
-	"red":     "\x1b[31m",
-	"green":   "\x1b[32m",
-	"yellow":  "\x1b[33m",
-	"blue":    "\x1b[34m",
-	"magenta": "\x1b[35m",
-	"cyan":    "\x1b[36m",
-	"white":   "\x1b[37m",
-}
 
 // FormatText replaces takes s, and replaces matches to vars
 // also applies text with control codes.
@@ -71,7 +56,7 @@ func FormatText(s string, vars map[string]string) (string, error) {
 				if key == "" {
 					continue
 				}
-				code, ok := SGR[key]
+				code, ok := models.SGR[key]
 				if !ok {
 					return "", fmt.Errorf("unknown style %q in {%s}", fx, content)
 				}
@@ -81,7 +66,7 @@ func FormatText(s string, vars map[string]string) (string, error) {
 			b.WriteString(val)
 			// only append reset if we actually applied any styles.
 			if prefix.Len() > 0 {
-				b.WriteString(SGR["reset"])
+				b.WriteString(models.SGR["reset"])
 			}
 		} else {
 			b.WriteString(val)

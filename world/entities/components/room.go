@@ -1,14 +1,18 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 
 	"example.com/mud/world/entities"
 )
 
 type Room struct {
-	exits    map[string]string
-	children *Children
+	MapIcon  string
+	MapColor string
+	Exits    map[string]string
+
+	children entities.IChildren
 }
 
 var _ entities.Component = &Room{}
@@ -16,6 +20,7 @@ var _ entities.ComponentWithChildren = &Room{}
 
 func NewRoom() *Room {
 	return &Room{
+		MapIcon:  "O",
 		children: NewChildren(),
 	}
 }
@@ -28,21 +33,35 @@ func (r *Room) Copy() entities.Component {
 	// right now copying a room's children is not supported
 	// return a room with no children
 	return &Room{
-		exits:    r.exits,
+		MapIcon:  r.MapIcon,
+		MapColor: r.MapColor,
+		Exits:    r.Exits,
 		children: NewChildren(),
 	}
+}
+
+func (r *Room) AddChild(child *entities.Entity) error {
+	err := r.GetChildren().AddChild(child)
+	if err != nil {
+		return fmt.Errorf("Inventory add child: %w", err)
+	}
+
+	child.Parent = r
+
+	return nil
+}
+
+func (r *Room) RemoveChild(child *entities.Entity) {
+	child.Parent = nil
+	r.GetChildren().RemoveChild(child)
 }
 
 func (r *Room) GetChildren() entities.IChildren {
 	return r.children
 }
 
-func (r *Room) SetExits(exits map[string]string) {
-	r.exits = exits
-}
-
 func (r *Room) GetNeighboringRoomId(direction string) (string, bool) {
-	roomId, ok := r.exits[direction]
+	roomId, ok := r.Exits[direction]
 	return roomId, ok
 }
 
@@ -50,7 +69,7 @@ func (r *Room) GetExitText() string {
 	var b strings.Builder
 	b.WriteString("Exits: ")
 
-	for exit := range r.exits {
+	for exit := range r.Exits {
 		b.WriteString(exit)
 		b.WriteString(", ")
 	}

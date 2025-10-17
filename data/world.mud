@@ -5,6 +5,9 @@ entity LivingRoom {
     tags is ["room"]
 
     component Room {
+        icon is "L"
+        color is "magenta"
+
         exits is {
             "north": "BedRoom",
             "east": "Bathroom"
@@ -12,7 +15,8 @@ entity LivingRoom {
 
         children is [
             "Couch",
-            "Lamp"
+            "Lamp",
+            "Box"
         ]
     }
 }
@@ -46,6 +50,8 @@ entity Nickel {
     description is "A shining {'nickel' | bold | yellow} lies here, Thomas Jefferson’s handsome side profile glinting faintly as though pleased with its escape."
     aliases is ["nickel"]
     tags is ["item"]
+
+   trait Item 
 }
 
 entity Lamp {
@@ -53,6 +59,56 @@ entity Lamp {
     description is "A dimly lit {'lamp' | bold | yellow} stands quietly in the corner, its weak glow casting just enough light to soften the edges of the room."
     aliases is ["lamp"]
     tags is ["furniture"]
+}
+
+entity Box {
+    name is "Box"
+    description is "A cardboard {'box' | bold | yellow} is here, too."
+    aliases is ["box"]
+    tags is ["furniture"]
+    
+    component Container {
+        prefix is "Inside the box:"
+        revealed is true
+        children is [
+            "Book",
+            "Shoe"
+        ]
+    }
+
+    react open {
+       then {
+            reveal target.Container
+            print source "You open the box."
+            publish "{source} opens the box"
+        } 
+    }
+
+    react close {
+        then {
+            hide target.Container
+            print source "You close the box."
+            publish "{source} closes the box."
+        }
+    }
+}
+
+entity Book {
+    name is "Book"
+    description is "A {'book' | bold | yellow} with a leather cover, a bold adaptation of VeggieTales with human characters."
+    aliases is ["book"]
+    tags is ["item"]
+    
+    trait Item 
+}
+
+entity Shoe {
+    name is "Shoe"
+    description is "A battered left shoe, the sole hangs unattached at the toe."
+    aliases is ["shoe"]
+    tags is ["item"]
+    
+    trait Item 
 }
 
 entity BedRoom {
@@ -107,6 +163,8 @@ entity Goblin {
     aliases is ["goblin", "man"]
     tags is ["npc"]
 
+    component Inventory {}
+
     react attack {
         then {
             print source "As you throw a {'punch' | yellow} at the goblin, he jumps around you, {'kissing' | red} your forehead."
@@ -128,11 +186,26 @@ entity Goblin {
             publish "{source} gives the goblin in their pocket a big wet {'kiss' | bold | red}."
         }
     }
+
+    react give {
+        when {
+            instrument has tag "item"
+        } then {
+            print source "You give the goblin your {instrument}, and he accepts it happily. 'You win!' He says, 'You win the game for giving the goblin an item!'"
+            publish "{source} gives the goblin {instrument}. The goblin is overjoyed."
+            move instrument to target.Inventory
+        }
+
+        then {
+            print source "The goblin gives you a smile, shaking his head softly. 'I don't want that stupid smelly thing,' he says."
+            publish "{source} tries to give the goblin {instrument}, but he refuses to take it."
+        }
+    }
 }
 
 entity Toilet {
     name is "Toilet"
-    description is "A {'toilet' | bold | yellow}, you piss and poop in here."
+    description is "A {'toilet' | bold | yellow}, it's shiny and porcelain."
     aliases is ["toilet"]
     tags is ["furniture"]
 

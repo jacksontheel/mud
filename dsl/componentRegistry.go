@@ -19,6 +19,7 @@ func registerComponentBuilder(name string, b componentBuilder) {
 func init() {
 	registerComponentBuilder("Room", buildRoom)
 	registerComponentBuilder("Inventory", buildInventory)
+	registerComponentBuilder("Container", buildContainer)
 }
 
 func processComponentPrototype(def *ast.ComponentDef) (entities.Component, error) {
@@ -32,12 +33,20 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	rm := components.NewRoom()
 	for _, f := range def.Fields {
 		switch f.Key {
+		case "icon":
+			icon := *f.Value.String
+			if len(icon) != 1 {
+				return nil, fmt.Errorf("invalid map icon '%s': must be 1 character", icon)
+			}
+			rm.MapIcon = icon
+		case "color":
+			rm.MapColor = *f.Value.String
 		case "exits":
 			m := f.Value.AsMap()
 			if m == nil {
 				m = map[string]string{}
 			}
-			rm.SetExits(m)
+			rm.Exits = m
 		case "children":
 			continue
 		default:
@@ -49,5 +58,50 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 
 func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
 	inventory := components.NewInventory()
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "prefix":
+			prefix := f.Value.String
+			if prefix == nil {
+				return nil, fmt.Errorf("container: prefix must be string")
+			}
+			inventory.GetChildren().SetPrefix(*prefix)
+		case "revealed":
+			revealed := f.Value.Bool
+			if revealed == nil {
+				return nil, fmt.Errorf("container: revealed must be a boolean")
+			}
+			inventory.GetChildren().SetRevealed(*revealed == "true")
+		case "children":
+			continue
+		default:
+			return nil, fmt.Errorf("room: unknown field %s", f.Key)
+		}
+	}
 	return inventory, nil
+}
+
+func buildContainer(def *ast.ComponentDef) (entities.Component, error) {
+	container := components.NewContainer()
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "prefix":
+			prefix := f.Value.String
+			if prefix == nil {
+				return nil, fmt.Errorf("container: prefix must be string")
+			}
+			container.GetChildren().SetPrefix(*prefix)
+		case "revealed":
+			revealed := f.Value.Bool
+			if revealed == nil {
+				return nil, fmt.Errorf("container: revealed must be a boolean")
+			}
+			container.GetChildren().SetRevealed(*revealed == "true")
+		case "children":
+			continue
+		default:
+			return nil, fmt.Errorf("room: unknown field %s", f.Key)
+		}
+	}
+	return container, nil
 }

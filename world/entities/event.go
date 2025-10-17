@@ -15,6 +15,7 @@ type Event struct {
 	Source       *Entity
 	Instrument   *Entity
 	Target       *Entity
+	Message      string
 }
 
 type Rule struct {

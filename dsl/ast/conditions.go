@@ -8,6 +8,7 @@ type ConditionDef struct {
 	EventRolesEqualCondition *EventRolesEqualCondition `| @@`
 	VariableEqualsCondition  *FieldEqualsCondition     `| @@`
 	HasChildCondition        *HasChildCondition        `| @@`
+	MessageContains          *MessageContains          `| @@`
 }
 
 type ExprCondition struct {
@@ -42,4 +43,8 @@ type HasChildCondition struct {
 	ChildRole  string `@Ident`
 	ParentRole string `"in" @Ident`
 	Component  string `"." @Ident`
+}
+
+type MessageContains struct {
+	Message string `"message" "contains" @String`
 }

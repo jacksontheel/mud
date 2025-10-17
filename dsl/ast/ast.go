@@ -24,8 +24,9 @@ type DSL struct {
 }
 
 type TopLevel struct {
-	Entity *EntityDef `"entity" @@`
-	Trait  *TraitDef  `| "trait" @@`
+	Entity  *EntityDef  `"entity" @@`
+	Trait   *TraitDef   `| "trait" @@`
+	Command *CommandDef `| "command" @@`
 }
 
 type EntityDef struct {
@@ -80,4 +81,18 @@ type FieldDef struct {
 type KV struct {
 	Key   string `@String`
 	Value string `":" @String`
+}
+
+type CommandDef struct {
+	Name   string          `@Ident`
+	Blocks []*CommandBlock `"{" { @@ } "}"`
+}
+
+type CommandBlock struct {
+	Field                *FieldDef             `  @@`
+	CommandDefinitionDef *CommandDefinitionDef `| @@`
+}
+
+type CommandDefinitionDef struct {
+	Fields []*FieldDef `"pattern" "{" { @@ } "}"`
 }

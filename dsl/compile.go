@@ -2,8 +2,10 @@ package dsl
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/mud/dsl/ast"
+	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
@@ -13,6 +15,7 @@ import (
 type collectedDefs struct {
 	entitiesById map[string]*ast.EntityDef
 	traitsById   map[string]*ast.TraitDef
+	commandsById map[string]*ast.CommandDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
@@ -40,32 +43,43 @@ type entityPrototypes struct {
 	visiting       map[string]struct{}
 }
 
-func Compile(ast *ast.DSL) (map[string]*entities.Entity, error) {
+func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
 	if ast == nil {
-		return nil, fmt.Errorf("nil DSL")
+		return nil, nil, fmt.Errorf("nil DSL")
 	}
 
 	collectedDefs, err := collectDefs(ast.Declarations)
 	if err != nil {
-		return nil, fmt.Errorf("could not collect top level declarations: %w", err)
+		return nil, nil, fmt.Errorf("could not collect top level declarations: %w", err)
 	}
 
 	prototypes, err := collectedDefs.collectPrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not collect prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not collect prototype entities: %w", err)
 	}
 
 	entitiesById, err := prototypes.instantiatePrototypes()
 	if err != nil {
-		return nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
+		return nil, nil, fmt.Errorf("could not instantiate prototype entities: %w", err)
 	}
 
-	return entitiesById, nil
+	commands := make([]*models.CommandDefinition, 0, len(collectedDefs.commandsById))
+	for _, c := range collectedDefs.commandsById {
+		cd, err := buildCommandDefinition(c)
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not instantiate command '%s'", c.Name)
+		}
+
+		commands = append(commands, cd)
+	}
+
+	return entitiesById, commands, nil
 }
 
-// collect entity and trait definitions
+// collect entity, command and trait definitions
 func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	entitiesById := make(map[string]*ast.EntityDef, len(decls))
+	commandsById := make(map[string]*ast.CommandDef, len(decls))
 	traitsById := make(map[string]*ast.TraitDef, len(decls))
 
 	for _, declaration := range decls {
@@ -85,6 +99,12 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 			}
 
 			traitsById[declaration.Trait.Name] = declaration.Trait
+		} else if ec := declaration.Command; ec != nil {
+			if _, exists := commandsById[ec.Name]; exists {
+				return nil, fmt.Errorf("duplicate command %s", ec.Name)
+			}
+
+			commandsById[declaration.Command.Name] = declaration.Command
 		} else {
 			return nil, fmt.Errorf("declaration at top level is empty")
 		}
@@ -93,6 +113,7 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 	return &collectedDefs{
 		entitiesById: entitiesById,
 		traitsById:   traitsById,
+		commandsById: commandsById,
 	}, nil
 }
 
@@ -210,7 +231,8 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			if err != nil {
 				return nil, err
 			}
-			rulesByCommand[block.Reaction.Command] = append(rulesByCommand[block.Reaction.Command], rules...)
+			// rules at the entity level come first
+			rulesByCommand[block.Reaction.Command] = append(rules, rulesByCommand[block.Reaction.Command]...)
 		} else if block.Component != nil {
 			// process component into prototype without children
 			comp, err := processComponentPrototype(block.Component)
@@ -227,6 +249,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 
 			components = append(components, loweredTrait.components...)
 			for command, traitRules := range loweredTrait.rulesByCommand {
+				// rules at the trait level come second
 				rulesByCommand[command] = append(rulesByCommand[command], traitRules...)
 			}
 		} else if block.Field != nil {
@@ -279,6 +302,86 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	}, nil
 }
 
+func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
+	cmd := &models.CommandDefinition{
+		Name:     strings.ToLower(cd.Name),
+		Aliases:  []string{},
+		Patterns: []models.CommandPattern{},
+	}
+
+	for _, b := range cd.Blocks {
+		if b.Field != nil {
+			f := b.Field
+			switch f.Key {
+			case "aliases":
+				cmd.Aliases = append(cmd.Aliases, f.Value.Strings...)
+			default:
+				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
+			}
+		} else if b.CommandDefinitionDef != nil {
+			commandPattern, err := buildCommandPattern(b.CommandDefinitionDef)
+			if err != nil {
+				return nil, fmt.Errorf("could not build command pattern: %w", err)
+			}
+
+			cmd.Patterns = append(cmd.Patterns, *commandPattern)
+		} else {
+			return nil, fmt.Errorf("could not expand command definition block")
+		}
+	}
+
+	return cmd, nil
+}
+
+func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern, error) {
+	var p = &models.CommandPattern{
+		Tokens: []models.PatToken{},
+	}
+
+	for _, f := range def.Fields {
+		switch f.Key {
+		case "syntax":
+			p.Tokens = tokenizeCommandSyntax(*f.Value.String)
+		case "noMatch":
+			p.NoMatchMessage = *f.Value.String
+		case "help":
+			p.HelpMessage = *f.Value.String
+		default:
+			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %s", f.Key)
+			return nil, err
+		}
+	}
+	return p, nil
+}
+
+func tokenizeCommandSyntax(s string) []models.PatToken {
+	var tokens []models.PatToken
+	parts := strings.Fields(s)
+
+	for _, part := range parts[:len(parts)-1] {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			slot := strings.Trim(part, "{}")
+			tokens = append(tokens, models.Slot(slot))
+		} else {
+			tokens = append(tokens, models.Lit(part))
+		}
+	}
+
+	lastPart := parts[len(parts)-1]
+	if strings.HasPrefix(lastPart, "{") && strings.HasSuffix(lastPart, "}") {
+		slot := strings.Trim(lastPart, "{}")
+		if strings.Contains(slot, "...") {
+			tokens = append(tokens, models.SlotRest(strings.TrimSuffix(slot, "...")))
+		} else {
+			tokens = append(tokens, models.Slot(slot))
+		}
+	} else {
+		tokens = append(tokens, models.Lit(lastPart))
+	}
+
+	return tokens
+}
+
 // loop through prototypes and instantiate them into a map of entities by name
 func (ep *entityPrototypes) instantiatePrototypes() (map[string]*entities.Entity, error) {
 	out := make(map[string]*entities.Entity, len(ep.prototypesById))
@@ -309,26 +412,39 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 	// for each child-capable component on the entity, look up its pending child names from the prototype’s sidecar and attach recursively.
 	if rm, ok := entities.GetComponent[*components.Room](inst); ok {
 		slot := ep.childrenPlan[id][entities.ComponentRoom]
-		if len(slot) > 0 {
+		if len(slot) > 0 && len(rm.GetChildren().GetChildren()) == 0 {
 			for _, childName := range slot {
 				childInst, err := ep.instantiate(childName, rm)
 				if err != nil {
 					return nil, err
 				}
-				rm.GetChildren().AddChild(childInst)
+				rm.AddChild(childInst)
 			}
 		}
 	}
 
 	if inventory, ok := entities.GetComponent[*components.Inventory](inst); ok {
 		slot := ep.childrenPlan[id][entities.ComponentInventory]
-		if len(slot) > 0 {
+		if len(slot) > 0 && len(inventory.GetChildren().GetChildren()) == 0 {
 			for _, childName := range slot {
 				childInst, err := ep.instantiate(childName, inventory)
 				if err != nil {
 					return nil, err
 				}
-				inventory.GetChildren().AddChild(childInst)
+				inventory.AddChild(childInst)
+			}
+		}
+	}
+
+	if container, ok := entities.GetComponent[*components.Container](inst); ok {
+		slot := ep.childrenPlan[id][entities.ComponentContainer]
+		if len(slot) > 0 && len(container.GetChildren().GetChildren()) == 0 {
+			for _, childName := range slot {
+				childInst, err := ep.instantiate(childName, container)
+				if err != nil {
+					return nil, err
+				}
+				container.AddChild(childInst)
 			}
 		}
 	}
@@ -462,6 +578,10 @@ func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 			ComponentType: component,
 			ChildRole:     childRole,
 		}
+	} else if def.MessageContains != nil {
+		newCondition = &conditions.MessageContains{
+			MessageRegex: strings.ToLower(def.MessageContains.Message),
+		}
 	} else {
 		return nil, fmt.Errorf("condition in when is empty")
 	}
@@ -529,7 +649,7 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 		} else if aDef.SetField != nil {
 			role, err := entities.ParseEventRole(aDef.SetField.Role)
 			if err != nil {
-				return nil, fmt.Errorf("event roles equal condition: %w", err)
+				return nil, fmt.Errorf("event set field action: %w", err)
 			}
 
 			newAction = &actions.SetField{
@@ -537,6 +657,32 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 				Field: aDef.SetField.Field,
 				Value: aDef.SetField.Value.Parse(),
 			}
+		} else if aDef.DestroyAction != nil {
+			role, err := entities.ParseEventRole(aDef.DestroyAction.Role)
+			if err != nil {
+				return nil, fmt.Errorf("event destroy action: %w", err)
+			}
+
+			newAction = &actions.Destroy{
+				Role: role,
+			}
+		} else if aDef.RevealChildrenAction != nil {
+			role, err := entities.ParseEventRole(aDef.RevealChildrenAction.Role)
+			if err != nil {
+				return nil, fmt.Errorf("could not build reveal children action for role: %w", err)
+			}
+
+			component, err := entities.ParseComponentType(aDef.RevealChildrenAction.Component)
+			if err != nil {
+				return nil, fmt.Errorf("could not build reveal children action: %w", err)
+			}
+
+			newAction = &actions.RevealChildren{
+				Role:          role,
+				ComponentType: component,
+				Reveal:        aDef.RevealChildrenAction.Set == "reveal",
+			}
+
 		} else {
 			return nil, fmt.Errorf("action in then is empty")
 		}

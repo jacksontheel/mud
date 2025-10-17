@@ -3,8 +3,10 @@ package entities
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
+	"example.com/mud/models"
 	"example.com/mud/utils"
 )
 
@@ -20,7 +22,7 @@ type Entity struct {
 	Parent      ComponentWithChildren
 }
 
-func NewEntity(name string, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
+func NewEntity(name, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
 	return &Entity{
 		components:  map[reflect.Type]Component{},
 		Name:        name,
@@ -73,13 +75,63 @@ func (e *Entity) RequireComponentWithChildren(ct ComponentType) (ComponentWithCh
 	return c, nil
 }
 
+func (e *Entity) GetComponentsWithChildren() []ComponentWithChildren {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	components := make([]ComponentWithChildren, 0, len(e.components))
+
+	for _, c := range e.components {
+		if cwc, ok := any(c).(ComponentWithChildren); ok {
+			components = append(components, cwc)
+		}
+	}
+
+	return components
+}
+
 func (e *Entity) GetDescription() (string, error) {
+	var b strings.Builder
+
 	formatted, err := utils.FormatText(e.Description, map[string]string{})
 	if err != nil {
 		return "", fmt.Errorf("could not format description for entity '%s': %w", e.Name, err)
 	}
 
-	return formatted, nil
+	b.WriteString(fmt.Sprintf("- %s", formatted))
+
+	for _, cwc := range e.GetComponentsWithChildren() {
+		if !cwc.GetChildren().GetRevealed() {
+			continue
+		}
+
+		children := cwc.GetChildren().GetChildren()
+		if len(children) == 0 {
+			continue
+		}
+
+		var childB strings.Builder
+		childB.WriteString("\n")
+
+		childB.WriteString(fmt.Sprintf("%s%s", models.Tab, cwc.GetChildren().GetPrefix()))
+		childB.WriteString(" (\n")
+
+		for _, child := range children {
+			cDescription, err := child.GetDescription()
+			if err != nil {
+				return "", fmt.Errorf("could not format description for entity '%s': %w", child.Name, err)
+			}
+
+			childB.WriteString(fmt.Sprintf("%s%s%s", models.Tab, models.Tab, cDescription))
+			childB.WriteString("\n")
+		}
+
+		b.WriteString(childB.String())
+
+		b.WriteString(fmt.Sprintf("%s)", models.Tab))
+	}
+
+	return b.String(), nil
 }
 
 func GetComponent[C Component](e *Entity) (C, bool) {
