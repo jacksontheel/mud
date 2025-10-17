@@ -46,6 +46,6 @@ type Primary struct {
 }
 
 type Field struct {
-	Role  string `@Ident`
-	Field string `"." @Ident`
+	Role string `@Ident`
+	Name string `"." @Ident`
 }

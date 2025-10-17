@@ -18,11 +18,11 @@ type Entity struct {
 	Description string
 	Aliases     []string
 	Tags        []string
-	Fields      map[string]any
+	Fields      map[string]models.Value
 	Parent      ComponentWithChildren
 }
 
-func NewEntity(name, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
+func NewEntity(name, description string, aliases []string, tags []string, fields map[string]models.Value, parent ComponentWithChildren) *Entity {
 	return &Entity{
 		components:  map[reflect.Type]Component{},
 		Name:        name,

@@ -32,9 +32,9 @@ type MoveAction struct {
 }
 
 type SetFieldAction struct {
-	Role  string  `@Ident`
-	Field string  `"." @Ident`
-	Value Literal `"to" @@`
+	Role  string     `@Ident`
+	Field string     `"." @Ident`
+	Expr  Expression `"to" @@`
 }
 
 type RevealChildrenAction struct {
