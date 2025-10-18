@@ -509,7 +509,16 @@ func buildWhen(def *ast.WhenBlock) ([]entities.Condition, error) {
 func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 	var newCondition entities.Condition
 
-	if def.HasTag != nil {
+	if def.ExprCondition != nil {
+		expression, err := buildExpression(def.ExprCondition.Expr)
+		if err != nil {
+			return nil, fmt.Errorf("condition expression: %w", err)
+		}
+
+		newCondition = &conditions.ExpressionTrue{
+			Expression: expression,
+		}
+	} else if def.HasTag != nil {
 		eventRole, err := entities.ParseEventRole(def.HasTag.Target)
 		if err != nil {
 			return nil, fmt.Errorf("could not build has tag condition: %w", err)

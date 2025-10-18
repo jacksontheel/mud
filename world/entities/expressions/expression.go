@@ -35,7 +35,7 @@ func (ef *ExpressionField) Eval(ev *entities.Event) (models.Value, error) {
 		return models.Value{}, fmt.Errorf("invalid role '%s' for expression", ef.F.Role)
 	}
 
-	return e.Fields[ef.F.Name], nil
+	return e.GetField(ef.F.Name), nil
 }
 
 type ExpressionUnary struct {

@@ -41,7 +41,5 @@ func (sf *SetField) Execute(ev *entities.Event) error {
 		return fmt.Errorf("could not evaluate expression in SetField: %w", err)
 	}
 
-	e.Fields[sf.Field] = exprResult
-
-	return nil
+	return e.SetField(sf.Field, exprResult)
 }
