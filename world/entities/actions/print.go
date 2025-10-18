@@ -2,7 +2,9 @@ package actions
 
 import (
 	"fmt"
+	"strconv"
 
+	"example.com/mud/models"
 	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 )
@@ -51,13 +53,51 @@ func fillFormatMap(ev *entities.Event) map[string]string {
 	out[entities.EventRoleMessage.String()] = ev.Message
 
 	if ev.Source != nil {
-		out[entities.EventRoleSource.String()] = ev.Source.Name
+		role := entities.EventRoleSource.String()
+		out[role] = ev.Source.Name
+
+		for f, v := range ev.Source.Fields {
+			switch v.K {
+			case models.KindBool:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
+			case models.KindInt:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
+			case models.KindString:
+				out[fmt.Sprintf("%s.%s", role, f)] = v.S
+			}
+		}
 	}
+
 	if ev.Instrument != nil {
-		out[entities.EventRoleInstrument.String()] = ev.Instrument.Name
+		role := entities.EventRoleInstrument.String()
+		out[role] = ev.Instrument.Name
+
+		for f, v := range ev.Instrument.Fields {
+			switch v.K {
+			case models.KindBool:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
+			case models.KindInt:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
+			case models.KindString:
+				out[fmt.Sprintf("%s.%s", role, f)] = v.S
+			}
+		}
 	}
+
 	if ev.Target != nil {
-		out[entities.EventRoleTarget.String()] = ev.Target.Name
+		role := entities.EventRoleTarget.String()
+		out[role] = ev.Target.Name
+
+		for f, v := range ev.Target.Fields {
+			switch v.K {
+			case models.KindBool:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
+			case models.KindInt:
+				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
+			case models.KindString:
+				out[fmt.Sprintf("%s.%s", role, f)] = v.S
+			}
+		}
 	}
 
 	return out
