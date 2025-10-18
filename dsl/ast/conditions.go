@@ -1,13 +1,18 @@
 package ast
 
 type ConditionDef struct {
-	Not                      *NotCondition             `  @@`
+	ExprCondition            *ExprCondition            `  @@`
+	Not                      *NotCondition             `| @@`
 	HasTag                   *HasTagCondition          `| @@`
 	IsPresent                *IsPresentCondition       `| @@`
 	EventRolesEqualCondition *EventRolesEqualCondition `| @@`
 	VariableEqualsCondition  *FieldEqualsCondition     `| @@`
 	HasChildCondition        *HasChildCondition        `| @@`
 	MessageContains          *MessageContains          `| @@`
+}
+
+type ExprCondition struct {
+	Expr *Expression `"expr" "{" @@ "}"`
 }
 
 type NotCondition struct {

@@ -5,6 +5,7 @@ import "strings"
 type Literal struct {
 	String  *string  `  @String`
 	Bool    *string  `| @Bool`
+	Number  *int     `| @Int`
 	Strings []string `| "[" @String { "," @String } "]"`
 	Pairs   []KV     `| "{" @@ { "," @@ } "}"`
 }
@@ -14,6 +15,8 @@ func (l *Literal) Parse() any {
 		return *l.String
 	} else if l.Bool != nil {
 		return *l.Bool == "true"
+	} else if l.Number != nil {
+		return *l.Number
 	} else if len(l.Strings) > 0 {
 		return l.Strings
 	} else {

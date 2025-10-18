@@ -18,11 +18,11 @@ type Entity struct {
 	Description string
 	Aliases     []string
 	Tags        []string
-	Fields      map[string]any
+	Fields      map[string]models.Value
 	Parent      ComponentWithChildren
 }
 
-func NewEntity(name, description string, aliases []string, tags []string, fields map[string]any, parent ComponentWithChildren) *Entity {
+func NewEntity(name, description string, aliases []string, tags []string, fields map[string]models.Value, parent ComponentWithChildren) *Entity {
 	return &Entity{
 		components:  map[reflect.Type]Component{},
 		Name:        name,
@@ -40,6 +40,36 @@ func (e *Entity) Copy(parent ComponentWithChildren) *Entity {
 		newEntity.Add(c.Copy())
 	}
 	return newEntity
+}
+
+func (e *Entity) GetField(fieldName string) models.Value {
+	switch fieldName {
+	case "name":
+		return models.VStr(e.Name)
+	case "description":
+		return models.VStr(e.Description)
+	}
+
+	return e.Fields[fieldName]
+}
+
+func (e *Entity) SetField(fieldName string, v models.Value) error {
+	switch fieldName {
+	case "name":
+		if v.K != models.KindString {
+			return fmt.Errorf("could not set %s name to non-string value", e.Description)
+		}
+		e.Name = v.S
+	case "description":
+		if v.K != models.KindString {
+			return fmt.Errorf("could not set %s description to non-string value", e.Description)
+		}
+		e.Description = v.S
+	default:
+		e.Fields[fieldName] = v
+	}
+
+	return nil
 }
 
 func (e *Entity) Add(c Component) *Entity {

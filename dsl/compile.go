@@ -10,6 +10,7 @@ import (
 	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
 	"example.com/mud/world/entities/conditions"
+	"example.com/mud/world/entities/expressions"
 )
 
 type collectedDefs struct {
@@ -26,7 +27,7 @@ type LoweredEntity struct {
 	tags           []string
 	aliases        []string
 	components     []entities.Component
-	fields         map[string]any
+	fields         map[string]models.Value
 	rulesByCommand map[string][]*entities.Rule
 }
 
@@ -219,7 +220,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	var description string
 	var aliases []string
 	var tags []string
-	fields := make(map[string]any)
+	fields := make(map[string]models.Value)
 
 	components := make([]entities.Component, 0, len(blocks))
 	rulesByCommand := make(map[string][]*entities.Rule, len(blocks))
@@ -270,7 +271,12 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			case "tags":
 				tags = f.Value.Strings
 			default:
-				fields[f.Key] = f.Value.Parse()
+				raw := f.Value.Parse()
+				v, err := models.FromAny(raw)
+				if err != nil {
+					return nil, fmt.Errorf("field %q: %w", f.Key, err)
+				}
+				fields[f.Key] = v
 			}
 		} else {
 			return nil, fmt.Errorf("could not expand empty entity block")
@@ -503,7 +509,16 @@ func buildWhen(def *ast.WhenBlock) ([]entities.Condition, error) {
 func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
 	var newCondition entities.Condition
 
-	if def.HasTag != nil {
+	if def.ExprCondition != nil {
+		expression, err := buildExpression(def.ExprCondition.Expr)
+		if err != nil {
+			return nil, fmt.Errorf("condition expression: %w", err)
+		}
+
+		newCondition = &conditions.ExpressionTrue{
+			Expression: expression,
+		}
+	} else if def.HasTag != nil {
 		eventRole, err := entities.ParseEventRole(def.HasTag.Target)
 		if err != nil {
 			return nil, fmt.Errorf("could not build has tag condition: %w", err)
@@ -652,10 +667,15 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 				return nil, fmt.Errorf("event set field action: %w", err)
 			}
 
+			expression, err := buildExpression(&aDef.SetField.Expr)
+			if err != nil {
+				return nil, fmt.Errorf("expression set field action: %w", err)
+			}
+
 			newAction = &actions.SetField{
-				Role:  role,
-				Field: aDef.SetField.Field,
-				Value: aDef.SetField.Value.Parse(),
+				Role:       role,
+				Field:      aDef.SetField.Field,
+				Expression: expression,
 			}
 		} else if aDef.DestroyAction != nil {
 			role, err := entities.ParseEventRole(aDef.DestroyAction.Role)
@@ -691,4 +711,235 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 	}
 
 	return ret, nil
+}
+
+func buildExpression(def *ast.Expression) (expressions.Expression, error) {
+	return buildEquality(def.Equality)
+}
+
+func buildEquality(n *ast.Equality) (expressions.Expression, error) {
+	left, err := buildComparison(n.Comparison)
+	if err != nil {
+		return nil, err
+	}
+
+	curr := n.Next
+	op := n.Op
+	for curr != nil {
+		right, err := buildComparison(curr.Comparison)
+		if err != nil {
+			return nil, err
+		}
+
+		bin, err := mapEqOp(op, left, right)
+		if err != nil {
+			return nil, err
+		}
+		left = bin
+
+		op = curr.Op
+		curr = curr.Next
+	}
+	return foldConst(left), nil
+}
+
+func buildComparison(def *ast.Comparison) (expressions.Expression, error) {
+	left, err := buildAddition(def.Addition)
+	if err != nil {
+		return nil, err
+	}
+
+	curr := def.Next
+	op := def.Op
+	for curr != nil {
+		right, err := buildAddition(curr.Addition)
+		if err != nil {
+			return nil, err
+		}
+
+		bin, err := mapCmpOp(op, left, right)
+		if err != nil {
+			return nil, err
+		}
+		left = bin
+
+		op = curr.Op
+		curr = curr.Next
+	}
+	return foldConst(left), nil
+}
+
+func buildAddition(def *ast.Addition) (expressions.Expression, error) {
+	left, err := buildMul(def.Multiplication)
+	if err != nil {
+		return nil, err
+	}
+
+	curr := def.Next
+	op := def.Op
+	for curr != nil {
+		right, err := buildMul(curr.Multiplication)
+		if err != nil {
+			return nil, err
+		}
+		bin, err := mapAddOp(op, left, right)
+		if err != nil {
+			return nil, err
+		}
+		left = bin
+		op = curr.Op
+		curr = curr.Next
+	}
+	return foldConst(left), nil
+}
+
+func buildMul(def *ast.Multiplication) (expressions.Expression, error) {
+	left, err := buildUnary(def.Unary)
+	if err != nil {
+		return nil, err
+	}
+	curr := def.Next
+	op := def.Op
+	for curr != nil {
+		right, err := buildUnary(curr.Unary)
+		if err != nil {
+			return nil, err
+		}
+		bin, err := mapMulOp(op, left, right)
+		if err != nil {
+			return nil, err
+		}
+		left = bin
+		op = curr.Op
+		curr = curr.Next
+	}
+	return foldConst(left), nil
+}
+
+func buildUnary(def *ast.Unary) (expressions.Expression, error) {
+	if def.Unary != nil {
+		sub, err := buildUnary(def.Unary)
+		if err != nil {
+			return nil, err
+		}
+		op, err := mapUnaryOp(def.Op)
+		if err != nil {
+			return nil, err
+		}
+		return foldConst(&expressions.ExpressionUnary{Op: op, Sub: sub}), nil
+	}
+	return buildPrimary(def.Primary)
+}
+
+func buildPrimary(def *ast.Primary) (expressions.Expression, error) {
+	switch {
+	case def.Number != nil:
+		return &expressions.ExpressionConst{V: models.VInt(*def.Number)}, nil
+	case def.String != nil:
+		s := *def.String
+		if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+			s = s[1 : len(s)-1]
+		}
+		return &expressions.ExpressionConst{V: models.VStr(s)}, nil
+	case def.Bool != nil:
+		return &expressions.ExpressionConst{V: models.VBool(*def.Bool)}, nil
+	case def.Nil:
+		return &expressions.ExpressionConst{V: models.VNil()}, nil
+	case def.Field != nil:
+		eventRole, err := entities.ParseEventRole(def.Field.Role)
+		if err != nil {
+			return nil, fmt.Errorf("could not build has tag condition: %w", err)
+		}
+		return &expressions.ExpressionField{
+			F: expressions.Field{
+				Role: eventRole,
+				Name: def.Field.Name,
+			},
+		}, nil
+	case def.SubExpression != nil:
+		return buildExpression(def.SubExpression)
+	default:
+		return nil, fmt.Errorf("invalid primary")
+	}
+}
+
+func mapEqOp(tok string, l, r expressions.Expression) (expressions.Expression, error) {
+	switch tok {
+	case "==":
+		return &expressions.ExpressionBinary{Op: expressions.OpEq, Left: l, Right: r}, nil
+	case "!=":
+		return &expressions.ExpressionBinary{Op: expressions.OpNe, Left: l, Right: r}, nil
+	}
+	return nil, fmt.Errorf("bad equality op %q", tok)
+}
+func mapCmpOp(tok string, l, r expressions.Expression) (expressions.Expression, error) {
+	switch tok {
+	case ">":
+		return &expressions.ExpressionBinary{Op: expressions.OpGt, Left: l, Right: r}, nil
+	case ">=":
+		return &expressions.ExpressionBinary{Op: expressions.OpGe, Left: l, Right: r}, nil
+	case "<":
+		return &expressions.ExpressionBinary{Op: expressions.OpLt, Left: l, Right: r}, nil
+	case "<=":
+		return &expressions.ExpressionBinary{Op: expressions.OpLe, Left: l, Right: r}, nil
+	}
+	return nil, fmt.Errorf("bad comparison op %q", tok)
+}
+func mapAddOp(tok string, l, r expressions.Expression) (expressions.Expression, error) {
+	switch tok {
+	case "+":
+		return &expressions.ExpressionBinary{Op: expressions.OpAdd, Left: l, Right: r}, nil
+	case "-":
+		return &expressions.ExpressionBinary{Op: expressions.OpSub, Left: l, Right: r}, nil
+	}
+	return nil, fmt.Errorf("bad add op %q", tok)
+}
+func mapMulOp(tok string, l, r expressions.Expression) (expressions.Expression, error) {
+	switch tok {
+	case "*":
+		return &expressions.ExpressionBinary{Op: expressions.OpMul, Left: l, Right: r}, nil
+	case "/":
+		return &expressions.ExpressionBinary{Op: expressions.OpDiv, Left: l, Right: r}, nil
+	}
+	return nil, fmt.Errorf("bad mul op %q", tok)
+}
+func mapUnaryOp(tok string) (expressions.UnaryOp, error) {
+	switch tok {
+	case "!":
+		return expressions.UNot, nil
+	case "-":
+		return expressions.UNeg, nil
+	}
+	return 0, fmt.Errorf("bad unary op %q", tok)
+}
+
+// Optional: tiny constant folder (post-order).
+func foldConst(n expressions.Expression) expressions.Expression {
+	switch t := n.(type) {
+	case *expressions.ExpressionUnary:
+		k := foldConst(t.Sub)
+		if sub, ok := k.(*expressions.ExpressionConst); ok {
+			v, err := (&expressions.ExpressionUnary{Op: t.Op, Sub: sub}).Eval(nil)
+			if err == nil {
+				return &expressions.ExpressionConst{V: v}
+			}
+		}
+		t.Sub = k
+		return t
+	case *expressions.ExpressionBinary:
+		l := foldConst(t.Left)
+		r := foldConst(t.Right)
+		if lc, ok := l.(*expressions.ExpressionConst); ok {
+			if rc, ok := r.(*expressions.ExpressionConst); ok {
+				v, err := (&expressions.ExpressionBinary{Op: t.Op, Left: lc, Right: rc}).Eval(nil)
+				if err == nil {
+					return &expressions.ExpressionConst{V: v}
+				}
+			}
+		}
+		t.Left, t.Right = l, r
+		return t
+	default:
+		return n
+	}
 }
