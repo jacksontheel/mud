@@ -507,101 +507,127 @@ func buildWhen(def *ast.WhenBlock) ([]entities.Condition, error) {
 }
 
 func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
-	var newCondition entities.Condition
-
-	if def.ExprCondition != nil {
-		expression, err := buildExpression(def.ExprCondition.Expr)
-		if err != nil {
-			return nil, fmt.Errorf("condition expression: %w", err)
-		}
-
-		newCondition = &conditions.ExpressionTrue{
-			Expression: expression,
-		}
-	} else if def.HasTag != nil {
-		eventRole, err := entities.ParseEventRole(def.HasTag.Target)
-		if err != nil {
-			return nil, fmt.Errorf("could not build has tag condition: %w", err)
-		}
-
-		newCondition = &conditions.HasTag{
-			EventRole: eventRole,
-			Tag:       def.HasTag.Tag,
-		}
-	} else if def.Not != nil {
-		nestedCondition, err := BuildCondition(def.Not.Cond)
-		if err != nil {
-			return nil, fmt.Errorf("not condition: %w", err)
-		}
-
-		newCondition = &conditions.Not{
-			Cond: nestedCondition,
-		}
-	} else if def.IsPresent != nil {
-		eventRole, err := entities.ParseEventRole(def.IsPresent.Role)
-		if err != nil {
-			return nil, fmt.Errorf("could not build has tag condition: %w", err)
-		}
-
-		newCondition = &conditions.IsPresent{
-			EventRole: eventRole,
-		}
-	} else if def.EventRolesEqualCondition != nil {
-		role1, err := entities.ParseEventRole(def.EventRolesEqualCondition.Role1)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-
-		role2, err := entities.ParseEventRole(def.EventRolesEqualCondition.Role2)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-
-		newCondition = &conditions.EventRolesEqual{
-			EventRole1: role1,
-			EventRole2: role2,
-		}
-	} else if def.VariableEqualsCondition != nil {
-		role, err := entities.ParseEventRole(def.VariableEqualsCondition.Role)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-
-		newCondition = &conditions.FieldEquals{
-			Role:  role,
-			Field: def.VariableEqualsCondition.Field,
-			Value: def.VariableEqualsCondition.Value.Parse(),
-		}
-	} else if def.HasChildCondition != nil {
-		parentRole, err := entities.ParseEventRole(def.HasChildCondition.ParentRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-
-		component, err := entities.ParseComponentType(def.HasChildCondition.Component)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-
-		childRole, err := entities.ParseEventRole(def.HasChildCondition.ChildRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-
-		newCondition = &conditions.HasChild{
-			ParentRole:    parentRole,
-			ComponentType: component,
-			ChildRole:     childRole,
-		}
-	} else if def.MessageContains != nil {
-		newCondition = &conditions.MessageContains{
-			MessageRegex: strings.ToLower(def.MessageContains.Message),
-		}
-	} else {
+	if def == nil || def.Or == nil {
 		return nil, fmt.Errorf("condition in when is empty")
 	}
 
-	return newCondition, nil
+	acc, err := buildCondAtom(def.Or.First)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, rhs := range def.Or.Rest {
+		next, err := buildCondAtom(rhs.Next)
+		if err != nil {
+			return nil, err
+		}
+		acc = &conditions.Or{
+			Left:  acc,
+			Right: next,
+		}
+	}
+
+	return acc, nil
+}
+
+func buildCondAtom(atom *ast.CondAtom) (entities.Condition, error) {
+	if atom == nil {
+		return nil, fmt.Errorf("empty condition atom")
+	}
+
+	if atom.Paren != nil {
+		return BuildCondition(atom.Paren)
+	}
+
+	if atom.Not != nil {
+		inner, err := BuildCondition(atom.Not.Cond) // NotCondition wraps *ConditionDef
+		if err != nil {
+			return nil, fmt.Errorf("not condition: %w", err)
+		}
+		return &conditions.Not{Cond: inner}, nil
+	}
+
+	if atom.Expr != nil {
+		expression, err := buildExpression(atom.Expr.Expr)
+		if err != nil {
+			return nil, fmt.Errorf("condition expression: %w", err)
+		}
+		return &conditions.ExpressionTrue{Expression: expression}, nil
+	}
+
+	if atom.HasTag != nil {
+		eventRole, err := entities.ParseEventRole(atom.HasTag.Target)
+		if err != nil {
+			return nil, fmt.Errorf("could not build has tag condition: %w", err)
+		}
+		return &conditions.HasTag{
+			EventRole: eventRole,
+			Tag:       atom.HasTag.Tag,
+		}, nil
+	}
+
+	if atom.IsPresent != nil {
+		eventRole, err := entities.ParseEventRole(atom.IsPresent.Role)
+		if err != nil {
+			return nil, fmt.Errorf("could not build is-present condition: %w", err)
+		}
+		return &conditions.IsPresent{EventRole: eventRole}, nil
+	}
+
+	if atom.RolesEqual != nil {
+		role1, err := entities.ParseEventRole(atom.RolesEqual.Role1)
+		if err != nil {
+			return nil, fmt.Errorf("event roles equal condition: %w", err)
+		}
+		role2, err := entities.ParseEventRole(atom.RolesEqual.Role2)
+		if err != nil {
+			return nil, fmt.Errorf("event roles equal condition: %w", err)
+		}
+		return &conditions.EventRolesEqual{
+			EventRole1: role1,
+			EventRole2: role2,
+		}, nil
+	}
+
+	if atom.FieldEq != nil {
+		role, err := entities.ParseEventRole(atom.FieldEq.Role)
+		if err != nil {
+			return nil, fmt.Errorf("field equals condition: %w", err)
+		}
+		return &conditions.FieldEquals{
+			Role:  role,
+			Field: atom.FieldEq.Field,
+			Value: atom.FieldEq.Value.Parse(),
+		}, nil
+	}
+
+	if atom.HasChild != nil {
+		parentRole, err := entities.ParseEventRole(atom.HasChild.ParentRole)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+		component, err := entities.ParseComponentType(atom.HasChild.Component)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+		childRole, err := entities.ParseEventRole(atom.HasChild.ChildRole)
+		if err != nil {
+			return nil, fmt.Errorf("has child condition: %w", err)
+		}
+		return &conditions.HasChild{
+			ParentRole:    parentRole,
+			ComponentType: component,
+			ChildRole:     childRole,
+		}, nil
+	}
+
+	if atom.MsgHas != nil {
+		return &conditions.MessageContains{
+			MessageRegex: strings.ToLower(atom.MsgHas.Message),
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unrecognized condition atom")
 }
 
 func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
