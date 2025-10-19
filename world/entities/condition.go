@@ -5,6 +5,7 @@ type ConditionType int
 const (
 	ConditionHasTag ConditionType = iota
 	ConditionNot
+	ConditionOr
 	ConditionIsPresent
 	ConditionEventRolesEqual
 	ConditionHasChild
