@@ -31,6 +31,9 @@ func (ef *ExpressionField) Eval(ev *entities.Event) (models.Value, error) {
 		e = ev.Instrument
 	case entities.EventRoleTarget:
 		e = ev.Target
+	case entities.EventRoleMessage:
+		// message is a string, not an entity
+		return models.VStr(ev.Message), nil
 	default:
 		return models.Value{}, fmt.Errorf("invalid role '%s' for expression", ef.F.Role)
 	}
