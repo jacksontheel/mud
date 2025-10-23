@@ -151,94 +151,59 @@ func (p *Player) Inventory() (string, error) {
 	return "You couldn't possibly carry anything at all.", nil
 }
 
-func (p *Player) ActMessage(action, message, noMatchResponse string) (string, error) {
-	if eventful, ok := entities.GetComponent[*components.Eventful](p.Entity); ok {
-		match, err := eventful.OnEvent(&entities.Event{
-			Type:         action,
-			Publisher:    p.world,
-			EntitiesById: p.world.EntitiesById(),
-			Room:         p.CurrentRoom,
-			Source:       p.Entity,
-			Target:       p.Entity,
-			Message:      message,
-		})
-
-		if err != nil {
-			return "", fmt.Errorf("act event for player '%s': %w", p.Name, err)
-		}
-
-		if match {
-			return "", nil
-		}
-	}
-	return noMatchResponse, nil
-
+func (p *Player) ActMessage(action, message, noMatchMessage string) (string, error) {
+	return p.sendEventToEntity(p.Entity, &entities.Event{
+		Type:         action,
+		Publisher:    p.world,
+		EntitiesById: p.world.EntitiesById(),
+		Room:         p.CurrentRoom,
+		Source:       p.Entity,
+		Message:      message,
+	}, noMatchMessage)
 }
 
-func (p *Player) ActUpon(action, targetAlias, noMatchResponse string) (string, error) {
+func (p *Player) ActUpon(action, targetAlias, noMatchMessage string) (string, error) {
 	target, err := p.getEntityByAlias(targetAlias)
 	if err != nil {
 		return "", fmt.Errorf("act upon get target for player '%s': %w", p.Name, err)
 	}
 
-	if target != nil {
-		if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
-			match, err := eventful.OnEvent(&entities.Event{
-				Type:         action,
-				Publisher:    p.world,
-				EntitiesById: p.world.EntitiesById(),
-				Room:         p.CurrentRoom,
-				Source:       p.Entity,
-				Target:       target,
-			})
-
-			if err != nil {
-				return "", fmt.Errorf("act upon on event for player '%s': %w", p.Name, err)
-			}
-
-			if match {
-				return "", nil
-			}
-		}
-		return noMatchResponse, nil
+	if target == nil {
+		return fmt.Sprintf("You wish to %s %s, but that's not here.", action, targetAlias), nil
 	}
 
-	return "You must be going mad. That's not here.", nil
+	return p.sendEventToEntity(target, &entities.Event{
+		Type:         action,
+		Publisher:    p.world,
+		EntitiesById: p.world.EntitiesById(),
+		Room:         p.CurrentRoom,
+		Source:       p.Entity,
+		Target:       target,
+	}, noMatchMessage)
 }
 
-func (p *Player) ActUponMessage(action, targetAlias, message, noMatchResponse string) (string, error) {
+func (p *Player) ActUponMessage(action, targetAlias, message, noMatchMessage string) (string, error) {
 	target, err := p.getEntityByAlias(targetAlias)
 	if err != nil {
 		return "", fmt.Errorf("act upon message get target for player '%s': %w", p.Name, err)
 	}
 
-	if target != nil {
-		if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
-			match, err := eventful.OnEvent(&entities.Event{
-				Type:         action,
-				Publisher:    p.world,
-				EntitiesById: p.world.EntitiesById(),
-				Room:         p.CurrentRoom,
-				Source:       p.Entity,
-				Target:       target,
-				Message:      message,
-			})
-
-			if err != nil {
-				return "", fmt.Errorf("act event for player '%s': %w", p.Name, err)
-			}
-
-			if match {
-				return "", nil
-			}
-		}
-		return noMatchResponse, nil
+	if target == nil {
+		return fmt.Sprintf("You can't %s without %s here", action, targetAlias), nil
 	}
 
-	return "You must be going mad. That's not here.", nil
+	return p.sendEventToEntity(target, &entities.Event{
+		Type:         action,
+		Publisher:    p.world,
+		EntitiesById: p.world.EntitiesById(),
+		Room:         p.CurrentRoom,
+		Source:       p.Entity,
+		Target:       target,
+		Message:      message,
+	}, noMatchMessage)
 }
 
-func (p *Player) ActUponWith(action, targetAlias, instrumentAlias, noMatchResponse string) (string, error) {
+func (p *Player) ActUponWith(action, targetAlias, instrumentAlias, noMatchMessage string) (string, error) {
 	target, err := p.getEntityByAlias(targetAlias)
 	if err != nil {
 		return "", fmt.Errorf("act upon with get target for player '%s': %w", p.Name, err)
@@ -255,26 +220,41 @@ func (p *Player) ActUponWith(action, targetAlias, instrumentAlias, noMatchRespon
 		return fmt.Sprintf("You don't have %s available.", instrumentAlias), nil
 	}
 
-	if eventful, ok := entities.GetComponent[*components.Eventful](target); ok {
-		match, err := eventful.OnEvent(&entities.Event{
-			Type:         action,
-			Publisher:    p.world,
-			EntitiesById: p.world.EntitiesById(),
-			Room:         p.CurrentRoom,
-			Source:       p.Entity,
-			Instrument:   instrument,
-			Target:       target,
-		})
+	return p.sendEventToEntity(target, &entities.Event{
+		Type:         action,
+		Publisher:    p.world,
+		EntitiesById: p.world.EntitiesById(),
+		Room:         p.CurrentRoom,
+		Source:       p.Entity,
+		Instrument:   instrument,
+		Target:       target,
+	}, noMatchMessage)
 
+}
+
+func (p *Player) sendEventToEntity(entity *entities.Entity, event *entities.Event, noMatchMessage string) (string, error) {
+	if entity == nil {
+		return "", fmt.Errorf("player '%s' send event nil entity", p.Name)
+	}
+
+	if eventful, ok := entities.GetComponent[*components.Eventful](entity); ok {
+
+		match, err := eventful.OnEvent(event)
 		if err != nil {
-			return "", fmt.Errorf("act upon with on event for player '%s': %w", p.Name, err)
+			return "", fmt.Errorf("player '%s' send event to '%s' on event error: %w", p.Name, entity.Name, err)
 		}
 
 		if match {
 			return "", nil
 		}
 	}
-	return noMatchResponse, nil
+
+	message, err := entities.FormatEventMessage(noMatchMessage, event)
+	if err != nil {
+		return "", fmt.Errorf("player '%s' send event to '%s' no match format: %w", p.Name, entity.Name, err)
+	}
+
+	return message, nil
 }
 
 // Get entity by first looking in player's current room, then in their inventory

@@ -2,10 +2,7 @@ package actions
 
 import (
 	"fmt"
-	"strconv"
 
-	"example.com/mud/models"
-	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 )
 
@@ -37,7 +34,7 @@ func (p *Print) Execute(ev *entities.Event) error {
 		return fmt.Errorf("invalid role '%s' for print action", p.EventRole.String())
 	}
 
-	message, err := utils.FormatText(p.Text, fillFormatMap(ev))
+	message, err := entities.FormatEventMessage(p.Text, ev)
 	if err != nil {
 		return err
 	}
@@ -45,60 +42,4 @@ func (p *Print) Execute(ev *entities.Event) error {
 	ev.Publisher.PublishTo(ev.Room, recipient, message)
 
 	return nil
-}
-
-func fillFormatMap(ev *entities.Event) map[string]string {
-	out := make(map[string]string, 4)
-
-	out[entities.EventRoleMessage.String()] = ev.Message
-
-	if ev.Source != nil {
-		role := entities.EventRoleSource.String()
-		out[role] = ev.Source.Name
-
-		for f, v := range ev.Source.Fields {
-			switch v.K {
-			case models.KindBool:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
-			case models.KindInt:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
-			case models.KindString:
-				out[fmt.Sprintf("%s.%s", role, f)] = v.S
-			}
-		}
-	}
-
-	if ev.Instrument != nil {
-		role := entities.EventRoleInstrument.String()
-		out[role] = ev.Instrument.Name
-
-		for f, v := range ev.Instrument.Fields {
-			switch v.K {
-			case models.KindBool:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
-			case models.KindInt:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
-			case models.KindString:
-				out[fmt.Sprintf("%s.%s", role, f)] = v.S
-			}
-		}
-	}
-
-	if ev.Target != nil {
-		role := entities.EventRoleTarget.String()
-		out[role] = ev.Target.Name
-
-		for f, v := range ev.Target.Fields {
-			switch v.K {
-			case models.KindBool:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatBool(v.B)
-			case models.KindInt:
-				out[fmt.Sprintf("%s.%s", role, f)] = strconv.FormatInt(int64(v.I), 10)
-			case models.KindString:
-				out[fmt.Sprintf("%s.%s", role, f)] = v.S
-			}
-		}
-	}
-
-	return out
 }
