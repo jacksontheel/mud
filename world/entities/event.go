@@ -39,6 +39,7 @@ func FormatEventMessage(message string, ev *Event) (string, error) {
 	if ev.Source != nil {
 		role := EventRoleSource.String()
 		eventMap[role] = ev.Source.Name
+		eventMap[fmt.Sprintf("%s.description", role)] = ev.Source.Description
 
 		for f, v := range ev.Source.Fields {
 			switch v.K {
@@ -55,6 +56,7 @@ func FormatEventMessage(message string, ev *Event) (string, error) {
 	if ev.Instrument != nil {
 		role := EventRoleInstrument.String()
 		eventMap[role] = ev.Instrument.Name
+		eventMap[fmt.Sprintf("%s.description", role)] = ev.Instrument.Description
 
 		for f, v := range ev.Instrument.Fields {
 			switch v.K {
@@ -71,6 +73,7 @@ func FormatEventMessage(message string, ev *Event) (string, error) {
 	if ev.Target != nil {
 		role := EventRoleTarget.String()
 		eventMap[role] = ev.Target.Name
+		eventMap[fmt.Sprintf("%s.description", role)] = ev.Target.Description
 
 		for f, v := range ev.Target.Fields {
 			switch v.K {
@@ -82,6 +85,10 @@ func FormatEventMessage(message string, ev *Event) (string, error) {
 				eventMap[fmt.Sprintf("%s.%s", role, f)] = v.S
 			}
 		}
+	}
+
+	if ev.Message != "" {
+		eventMap[EventRoleMessageString] = ev.Message
 	}
 
 	message, err := utils.FormatText(message, eventMap)
