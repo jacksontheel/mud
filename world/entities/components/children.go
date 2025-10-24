@@ -1,12 +1,16 @@
 package components
 
-import "example.com/mud/world/entities"
+import (
+	"fmt"
+
+	"example.com/mud/world/entities"
+)
 
 type Children struct {
 	revealed bool
 	prefix   string
 
-	childByAlias   map[string]*entities.Entity
+	childByAlias   map[string][]*entities.Entity
 	aliasesByChild map[*entities.Entity][]string
 }
 
@@ -14,7 +18,7 @@ var _ entities.IChildren = &Children{}
 
 func NewChildren() *Children {
 	return &Children{
-		childByAlias:   make(map[string]*entities.Entity),
+		childByAlias:   make(map[string][]*entities.Entity),
 		aliasesByChild: make(map[*entities.Entity][]string),
 	}
 }
@@ -25,10 +29,6 @@ func (c *Children) Copy() entities.IChildren {
 
 	copiedChildren.revealed = c.revealed
 	copiedChildren.prefix = c.prefix
-
-	for _, child := range c.GetChildren() {
-		copiedChildren.AddChild(child)
-	}
 
 	return copiedChildren
 }
@@ -57,7 +57,7 @@ func (c *Children) AddChild(child *entities.Entity) error {
 	}
 	for _, alias := range aliases {
 		c.aliasesByChild[child] = append(c.aliasesByChild[child], alias)
-		c.childByAlias[alias] = child
+		c.childByAlias[alias] = append(c.childByAlias[alias], child)
 	}
 
 	return nil
@@ -70,7 +70,15 @@ func (c *Children) RemoveChild(child *entities.Entity) {
 	}
 
 	for _, alias := range aliases {
-		delete(c.childByAlias, alias) // for each alias, delete from itemsByAlias
+		// NOTE: This is potentially slow, consider making childrenByAlias a map[string]map[*Entity]struct{}
+		oldEntities := c.childByAlias[alias]
+		newEntities := make([]*entities.Entity, 0, len(oldEntities))
+		for _, oe := range oldEntities {
+			if oe != child {
+				newEntities = append(newEntities, oe)
+			}
+		}
+		c.childByAlias[alias] = newEntities
 	}
 	delete(c.aliasesByChild, child) // delete entry from aliasesByItem
 }
@@ -83,10 +91,15 @@ func (c *Children) GetChildren() []*entities.Entity {
 	return children
 }
 
-func (c *Children) GetChildByAlias(alias string) (*entities.Entity, bool) {
-	child, ok := c.childByAlias[alias]
-	if ok {
-		return child, ok
+func (c *Children) GetChildrenByAlias(alias string) []entities.AmbiguityOption {
+	eMatches := make([]entities.AmbiguityOption, 0, 10)
+
+	children := c.childByAlias[alias]
+	for _, child := range children {
+		eMatches = append(eMatches, entities.AmbiguityOption{
+			Text:   fmt.Sprintf("%s: %s", c.GetPrefix(), child.Name),
+			Entity: child,
+		})
 	}
 
 	for _, children := range c.GetChildren() {
@@ -95,12 +108,14 @@ func (c *Children) GetChildByAlias(alias string) (*entities.Entity, bool) {
 				continue
 			}
 
-			grandchild, ok := cwc.GetChildren().GetChildByAlias(alias)
-			return grandchild, ok
+			grandchildren := cwc.GetChildren().GetChildrenByAlias(alias)
+			if len(grandchildren) > 0 {
+				eMatches = append(eMatches, grandchildren...)
+			}
 		}
 	}
 
-	return child, ok
+	return eMatches
 }
 
 func (c *Children) HasChild(e *entities.Entity) bool {

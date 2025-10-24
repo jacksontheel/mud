@@ -93,13 +93,13 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 	// see if it has target
 	if target := cmd.Params["target"]; target != "" {
 		if instrument := cmd.Params["instrument"]; instrument != "" {
-			response, err := p.ActUponWith(cmd.Kind, target, instrument, cmd.NoMatchMessage)
+			response, err := p.ActUponWithAlias(cmd.Kind, target, instrument, cmd.NoMatchMessage)
 			return response, err
 		} else if message := cmd.Params["message"]; message != "" {
-			response, err := p.ActUponMessage(cmd.Kind, target, message, cmd.NoMatchMessage)
+			response, err := p.ActUponMessageAlias(cmd.Kind, target, message, cmd.NoMatchMessage)
 			return response, err
 		} else {
-			response, err := p.ActUpon(cmd.Kind, target, cmd.NoMatchMessage)
+			response, err := p.ActUponAlias(cmd.Kind, target, cmd.NoMatchMessage)
 			return response, err
 		}
 	}

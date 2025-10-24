@@ -73,6 +73,6 @@ type IChildren interface {
 	AddChild(child *Entity) error
 	RemoveChild(child *Entity)
 	GetChildren() []*Entity
-	GetChildByAlias(alias string) (*Entity, bool)
+	GetChildrenByAlias(alias string) []AmbiguityOption
 	HasChild(e *Entity) bool
 }

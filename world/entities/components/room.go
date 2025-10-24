@@ -30,13 +30,11 @@ func (r *Room) Id() entities.ComponentType {
 }
 
 func (r *Room) Copy() entities.Component {
-	// right now copying a room's children is not supported
-	// return a room with no children
 	return &Room{
 		MapIcon:  r.MapIcon,
 		MapColor: r.MapColor,
 		Exits:    r.Exits,
-		children: NewChildren(),
+		children: r.children.Copy(),
 	}
 }
 
