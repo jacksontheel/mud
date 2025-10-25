@@ -248,11 +248,34 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 				return nil, fmt.Errorf("could not process trait '%s': %w", block.Trait.Name, err)
 			}
 
+			// first write over fields that were passed into trait
+			for _, f := range block.Trait.Fields {
+				raw := f.Value.Parse()
+				v, err := models.FromAny(raw)
+				if err != nil {
+					return nil, fmt.Errorf("field %q: %w", f.Key, err)
+				}
+
+				// only include fields passed into trait that aren't already defined
+				if _, ok := fields[f.Key]; !ok {
+					fields[f.Key] = v
+				}
+			}
+
+			// first add fields that were inherited from trait
+			for k, tf := range loweredTrait.fields {
+				// only include fields from trait that aren't already defined
+				if _, ok := fields[k]; !ok {
+					fields[k] = tf
+				}
+			}
+
 			components = append(components, loweredTrait.components...)
 			for command, traitRules := range loweredTrait.rulesByCommand {
 				// rules at the trait level come second
 				rulesByCommand[command] = append(rulesByCommand[command], traitRules...)
 			}
+
 		} else if block.Field != nil {
 			f := block.Field
 			switch f.Key {
@@ -589,18 +612,6 @@ func buildCondAtom(atom *ast.CondAtom) (entities.Condition, error) {
 		}, nil
 	}
 
-	if atom.FieldEq != nil {
-		role, err := entities.ParseEventRole(atom.FieldEq.Role)
-		if err != nil {
-			return nil, fmt.Errorf("field equals condition: %w", err)
-		}
-		return &conditions.FieldEquals{
-			Role:  role,
-			Field: atom.FieldEq.Field,
-			Value: atom.FieldEq.Value.Parse(),
-		}, nil
-	}
-
 	if atom.HasChild != nil {
 		parentRole, err := entities.ParseEventRole(atom.HasChild.ParentRole)
 		if err != nil {
@@ -868,7 +879,7 @@ func buildPrimary(def *ast.Primary) (expressions.Expression, error) {
 		}
 		return &expressions.ExpressionConst{V: models.VStr(s)}, nil
 	case def.Bool != nil:
-		return &expressions.ExpressionConst{V: models.VBool(*def.Bool)}, nil
+		return &expressions.ExpressionConst{V: models.VBool(*def.Bool == "true")}, nil
 	case def.Nil:
 		return &expressions.ExpressionConst{V: models.VNil()}, nil
 	case def.Field != nil:
