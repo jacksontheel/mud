@@ -31,8 +31,16 @@ func processComponentPrototype(def *ast.ComponentDef) (entities.Component, error
 
 func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	rm := components.NewRoom()
+	rm.GetChildren().SetPrefix("In the room")
+
 	for _, f := range def.Fields {
 		switch f.Key {
+		case "prefix":
+			prefix := f.Value.String
+			if prefix == nil {
+				return nil, fmt.Errorf("room: prefix must be string")
+			}
+			rm.GetChildren().SetPrefix(*prefix)
 		case "icon":
 			icon := *f.Value.String
 			if len(icon) != 1 {
@@ -63,7 +71,7 @@ func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
 		case "prefix":
 			prefix := f.Value.String
 			if prefix == nil {
-				return nil, fmt.Errorf("container: prefix must be string")
+				return nil, fmt.Errorf("inventory: prefix must be string")
 			}
 			inventory.GetChildren().SetPrefix(*prefix)
 		case "revealed":

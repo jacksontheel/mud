@@ -30,7 +30,7 @@ func (i *Inventory) Copy() entities.Component {
 	}
 
 	for _, child := range i.children.GetChildren() {
-		iCopy.AddChild(child)
+		iCopy.AddChild(child.Copy(iCopy))
 	}
 
 	return iCopy

@@ -2,15 +2,18 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 
 	"example.com/mud/config"
 	"example.com/mud/dsl"
 	"example.com/mud/parser/commands"
 	"example.com/mud/world"
+	"example.com/mud/world/entities"
 	"example.com/mud/world/player"
 )
 
@@ -95,8 +98,51 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *pla
 			break
 		}
 
+		// check if player has pending multi-part messages
+		if p := player.Pending; p != nil {
+			n, nerr := strconv.Atoi(line)
+			if nerr == nil {
+				slot := p.Ambiguity.Slots[p.StepIndex]
+				if n >= 1 && n <= len(slot.Matches) {
+					p.Selected[slot.Role] = n - 1
+					p.StepIndex++
+					if p.StepIndex < len(p.Ambiguity.Slots) {
+						// continue prompting current slot
+						promptCurrentSlot(conn, p)
+					} else {
+						chosen := make(map[string]*entities.Entity, len(p.Selected))
+						for _, s := range p.Ambiguity.Slots {
+							idx := p.Selected[s.Role]
+							chosen[s.Role] = s.Matches[idx].Entity
+						}
+						out, execErr := p.Ambiguity.Execute(chosen)
+						player.Pending = nil
+						if execErr != nil {
+							fmt.Fprintln(conn, execErr.Error())
+						} else if out != "" {
+							fmt.Fprintln(conn, out)
+						}
+					}
+				}
+				continue
+			}
+			// non-number input falls through and removes pending action
+			player.Pending = nil
+		}
+
 		message, err := gameWorld.Parse(player, line)
 		if err != nil {
+			var amb *entities.AmbiguityError
+			if errors.As(err, &amb) {
+				player.Pending = &entities.PendingAction{
+					Ambiguity: amb,
+					StepIndex: 0,
+					Selected:  map[string]int{},
+				}
+				promptCurrentSlot(conn, player.Pending)
+				continue
+			}
+
 			err := fmt.Errorf("error received: %w", err)
 
 			fmt.Println(err.Error())
@@ -112,6 +158,14 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *pla
 
 	gameWorld.DisconnectPlayer(player)
 	fmt.Printf("Connection closed\n")
+}
+
+func promptCurrentSlot(conn net.Conn, p *entities.PendingAction) {
+	slot := p.Ambiguity.Slots[p.StepIndex]
+	fmt.Fprintln(conn, slot.Prompt)
+	for i, opt := range slot.Matches {
+		fmt.Fprintf(conn, "  %d) %s\r\n", i+1, opt.Text)
+	}
 }
 
 func main() {

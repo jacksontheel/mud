@@ -36,7 +36,7 @@ func (c *Container) Copy() entities.Component {
 }
 
 func (c *Container) AddChild(child *entities.Entity) error {
-	err := c.GetChildren().AddChild(child)
+	err := c.GetChildren().AddChild(child.Copy((c)))
 	if err != nil {
 		return fmt.Errorf("Container add child: %w", err)
 	}

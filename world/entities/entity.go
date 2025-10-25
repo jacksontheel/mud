@@ -143,7 +143,7 @@ func (e *Entity) GetDescription() (string, error) {
 		var childB strings.Builder
 		childB.WriteString("\n")
 
-		childB.WriteString(fmt.Sprintf("%s%s", models.Tab, cwc.GetChildren().GetPrefix()))
+		childB.WriteString(fmt.Sprintf("%s%s:", models.Tab, cwc.GetChildren().GetPrefix()))
 		childB.WriteString(" (\n")
 
 		for _, child := range children {
