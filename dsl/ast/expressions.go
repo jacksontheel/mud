@@ -39,7 +39,7 @@ type Unary struct {
 type Primary struct {
 	Number        *int        `  @Int`
 	String        *string     `| @String`
-	Bool          *bool       `| @( "true" | "false" )`
+	Bool          *string     `| @( "true" | "false" )`
 	Field         *Field      `| @@`
 	SubExpression *Expression `| "(" @@ ")" `
 	Nil           bool        `| @"nil"`

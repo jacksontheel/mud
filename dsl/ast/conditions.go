@@ -20,7 +20,6 @@ type CondAtom struct {
 	HasTag     *HasTagCondition          `| @@`
 	IsPresent  *IsPresentCondition       `| @@`
 	RolesEqual *EventRolesEqualCondition `| @@`
-	FieldEq    *FieldEqualsCondition     `| @@`
 	HasChild   *HasChildCondition        `| @@`
 	MsgHas     *MessageContains          `| @@`
 }
@@ -45,12 +44,6 @@ type IsPresentCondition struct {
 type EventRolesEqualCondition struct {
 	Role1 string `@Ident`
 	Role2 string `"is" @Ident`
-}
-
-type FieldEqualsCondition struct {
-	Role  string  `@Ident`
-	Field string  `"." @Ident`
-	Value Literal `"is" @@`
 }
 
 type HasChildCondition struct {

@@ -52,7 +52,8 @@ type ComponentDef struct {
 }
 
 type TraitInheritanceDef struct {
-	Name string `@Ident`
+	Name   string      `@Ident`
+	Fields []*FieldDef `("{" { @@ } "}")?`
 }
 
 type ReactionDef struct {
