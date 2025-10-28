@@ -16,7 +16,7 @@ import (
 func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
 	parser, err := participle.Build[ast.DSL](
 		participle.Lexer(ast.DslLexer),
-		participle.Elide("Whitespace"),
+		participle.Elide("Whitespace", "Comment"),
 		participle.Unquote("String"),
 	)
 	if err != nil {
