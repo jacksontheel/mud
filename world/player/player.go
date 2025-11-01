@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"example.com/mud/models"
@@ -361,6 +362,15 @@ func (p *Player) sendEventToEntity(entity *entities.Entity, event *entities.Even
 func (p *Player) getEntitiesByAlias(alias string) ([]entities.AmbiguityOption, error) {
 	eMatches := make([]entities.AmbiguityOption, 0, 10)
 
+	// check if the room itself has a matching alias
+	if slices.Contains(p.CurrentRoom.Aliases, alias) {
+		eMatches = append(eMatches, entities.AmbiguityOption{
+			Text:   fmt.Sprintf("The room: %s", p.CurrentRoom.Name),
+			Entity: p.CurrentRoom,
+		})
+	}
+
+	// look for matches in the room
 	room, err := entities.RequireComponent[*components.Room](p.CurrentRoom)
 	if err != nil {
 		return nil, fmt.Errorf("getEntityByAlias for player '%s': %w", p.Name, err)
@@ -370,6 +380,7 @@ func (p *Player) getEntitiesByAlias(alias string) ([]entities.AmbiguityOption, e
 		}
 	}
 
+	// look for matches in the player's inventory
 	if inventory, ok := entities.GetComponent[*components.Inventory](p.Entity); ok {
 		if iMatches := inventory.GetChildren().GetChildrenByAlias(alias); len(iMatches) > 0 {
 			eMatches = append(eMatches, iMatches...)
