@@ -26,6 +26,29 @@ type Event struct {
 	Message      string
 }
 
+func (e *Event) GetRole(role EventRole) (*Entity, error) {
+	var roleEntity *Entity
+
+	switch role {
+	case EventRoleSource:
+		roleEntity = e.Source
+	case EventRoleInstrument:
+		roleEntity = e.Instrument
+	case EventRoleTarget:
+		roleEntity = e.Target
+	case EventRoleRoom:
+		roleEntity = e.Room
+	default:
+		return nil, fmt.Errorf("invalid role '%s'", role.String())
+	}
+
+	if roleEntity == nil {
+		return nil, fmt.Errorf("role %s for event is nil", role.String())
+	}
+
+	return roleEntity, nil
+}
+
 type Rule struct {
 	When []Condition
 	Then []Action

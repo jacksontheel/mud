@@ -15,10 +15,6 @@ type SetField struct {
 
 var _ entities.Action = &SetField{}
 
-func (sf *SetField) Id() entities.ActionType {
-	return entities.ActionSetField
-}
-
 func (sf *SetField) Execute(ev *entities.Event) error {
 	var e *entities.Entity
 	switch sf.Role {

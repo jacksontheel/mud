@@ -678,7 +678,7 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 				ComponentType: component,
 			}
 		} else if aDef.Move != nil {
-			roleOrigin, err := entities.ParseEventRole(aDef.Move.RoleOrigin)
+			roleObject, err := entities.ParseEventRole(aDef.Move.RoleObject)
 			if err != nil {
 				return nil, fmt.Errorf("could not build move action for origin: %w", err)
 			}
@@ -694,7 +694,7 @@ func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
 			}
 
 			newAction = &actions.Move{
-				RoleOrigin:      roleOrigin,
+				RoleObject:      roleObject,
 				RoleDestination: roleDestination,
 				ComponentType:   component,
 			}

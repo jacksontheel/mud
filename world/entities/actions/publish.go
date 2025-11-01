@@ -12,10 +12,6 @@ type Publish struct {
 
 var _ entities.Action = &Publish{}
 
-func (p *Publish) Id() entities.ActionType {
-	return entities.ActionPublish
-}
-
 func (p *Publish) Execute(ev *entities.Event) error {
 	if ev.Publisher == nil {
 		return fmt.Errorf("publisher in event may not be nil for publish action")

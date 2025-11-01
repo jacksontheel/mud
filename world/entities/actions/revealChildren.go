@@ -14,10 +14,6 @@ type RevealChildren struct {
 
 var _ entities.Action = &RevealChildren{}
 
-func (r *RevealChildren) Id() entities.ActionType {
-	return entities.ActionRevealChildren
-}
-
 func (r *RevealChildren) Execute(ev *entities.Event) error {
 	var role *entities.Entity
 	switch r.Role {

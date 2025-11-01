@@ -26,7 +26,7 @@ type CopyAction struct {
 }
 
 type MoveAction struct {
-	RoleOrigin      string ` @Ident`
+	RoleObject      string ` @Ident`
 	RoleDestination string ` "to" @Ident`
 	Component       string `"." @Ident`
 }
