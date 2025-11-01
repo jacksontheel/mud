@@ -3,11 +3,11 @@ package ast
 import "strings"
 
 type Literal struct {
-	String  *string  `  @String`
-	Bool    *string  `| @Bool`
-	Number  *int     `| @Int`
-	Strings []string `| "[" @String { "," @String } "]"`
-	Pairs   []KV     `| "{" @@ { "," @@ } "}"`
+	String  *string  `parser:"  @String"`
+	Bool    *string  `parser:"| @Bool"`
+	Number  *int     `parser:"| @Int"`
+	Strings []string `parser:"| '[' @String { ',' @String } ']'"`
+	Pairs   []KV     `parser:"| '{' @@ { ',' @@ } '}'"`
 }
 
 func (l *Literal) Parse() any {
