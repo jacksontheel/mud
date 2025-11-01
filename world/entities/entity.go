@@ -57,16 +57,41 @@ func (e *Entity) SetField(fieldName string, v models.Value) error {
 	switch fieldName {
 	case "name":
 		if v.K != models.KindString {
-			return fmt.Errorf("could not set %s name to non-string value", e.Description)
+			return fmt.Errorf("could not set %s name to non-string value", e.Name)
 		}
 		e.Name = v.S
 	case "description":
 		if v.K != models.KindString {
-			return fmt.Errorf("could not set %s description to non-string value", e.Description)
+			return fmt.Errorf("could not set %s description to non-string value", e.Name)
 		}
 		e.Description = v.S
+	case "aliases":
+		if v.K != models.KindStringList {
+			return fmt.Errorf("could not set %s aliases to non-string-list value", e.Name)
+		}
+		err := e.setAliases(v.SL)
+		if err != nil {
+			return fmt.Errorf("set field: %w", err)
+		}
+	case "tags":
+		if v.K != models.KindStringList {
+			return fmt.Errorf("could not set %s tags to non-string-list value", e.Name)
+		}
+		e.Tags = v.SL
 	default:
 		e.Fields[fieldName] = v
+	}
+
+	return nil
+}
+
+func (e *Entity) setAliases(aliases []string) error {
+	e.Aliases = aliases
+
+	// entities are indexed by aliases for performance reasons, so we need to reindex
+	err := e.Parent.GetChildren().ReindexAliasesForEntity(e)
+	if err != nil {
+		return fmt.Errorf("error setting aliases for entity '%s': %w", e.Name, err)
 	}
 
 	return nil

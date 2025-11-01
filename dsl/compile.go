@@ -68,7 +68,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 	for _, c := range collectedDefs.commandsById {
 		cd, err := buildCommandDefinition(c)
 		if err != nil {
-			return nil, nil, fmt.Errorf("could not instantiate command '%s'", c.Name)
+			return nil, nil, fmt.Errorf("could not instantiate command '%s': %w", c.Name, err)
 		}
 
 		commands = append(commands, cd)
@@ -199,8 +199,14 @@ func (ep *entityPrototypes) buildPrototype(id string, blocks []*ast.EntityBlock)
 					return nil, fmt.Errorf("could not build prototype '%s': %w", id, err)
 				}
 
+				// get list of strings from expression
+				childrenStrings, err := immediateEvalExpressionAs(f.Value, models.KindStringList)
+				if err != nil {
+					return nil, fmt.Errorf("could not get children list for prototype '%s': %w", id, err)
+				}
+
 				ep.childrenPlan[id][componentType] =
-					append(ep.childrenPlan[id][componentType], f.Value.Strings...)
+					append(ep.childrenPlan[id][componentType], childrenStrings.SL...)
 			}
 		}
 	}
@@ -250,15 +256,14 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 
 			// first write over fields that were passed into trait
 			for _, f := range block.Trait.Fields {
-				raw := f.Value.Parse()
-				v, err := models.FromAny(raw)
+				value, err := immediateEvalExpression(f.Value)
 				if err != nil {
-					return nil, fmt.Errorf("field %q: %w", f.Key, err)
+					return nil, fmt.Errorf("could not get process trait '%s' field '%s': %w", block.Trait.Name, f.Key, err)
 				}
 
 				// only include fields passed into trait that aren't already defined
 				if _, ok := fields[f.Key]; !ok {
-					fields[f.Key] = v
+					fields[f.Key] = value
 				}
 			}
 
@@ -278,28 +283,34 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 
 		} else if block.Field != nil {
 			f := block.Field
+			value, err := immediateEvalExpression(block.Field.Value)
+			if err != nil {
+				return nil, fmt.Errorf("could not get process field '%s' for entity '%s': %w", block.Field.Key, id, err)
+			}
+
 			switch f.Key {
 			case "name":
-				if f.Value.String == nil {
+				if value.K != models.KindString {
 					return nil, fmt.Errorf("name must be a string")
 				}
-				name = *f.Value.String
+				name = value.S
 			case "description":
-				if f.Value.String == nil {
+				if value.K != models.KindString {
 					return nil, fmt.Errorf("description must be a string")
 				}
-				description = *f.Value.String
+				description = value.S
 			case "aliases":
-				aliases = f.Value.Strings
-			case "tags":
-				tags = f.Value.Strings
-			default:
-				raw := f.Value.Parse()
-				v, err := models.FromAny(raw)
-				if err != nil {
-					return nil, fmt.Errorf("field %q: %w", f.Key, err)
+				if value.K != models.KindStringList {
+					return nil, fmt.Errorf("aliases must be a string list")
 				}
-				fields[f.Key] = v
+				aliases = value.SL
+			case "tags":
+				if value.K != models.KindStringList {
+					return nil, fmt.Errorf("tags must be a string list")
+				}
+				tags = value.SL
+			default:
+				fields[f.Key] = value
 			}
 		} else {
 			return nil, fmt.Errorf("could not expand empty entity block")
@@ -343,7 +354,11 @@ func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, erro
 			f := b.Field
 			switch f.Key {
 			case "aliases":
-				cmd.Aliases = append(cmd.Aliases, f.Value.Strings...)
+				value, err := immediateEvalExpressionAs(f.Value, models.KindStringList)
+				if err != nil {
+					return nil, fmt.Errorf("could not get value '%s' for command aliases: %w", f.Key, err)
+				}
+				cmd.Aliases = append(cmd.Aliases, value.SL...)
 			default:
 				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
 			}
@@ -368,13 +383,18 @@ func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern,
 	}
 
 	for _, f := range def.Fields {
+		value, err := immediateEvalExpressionAs(f.Value, models.KindString)
+		if err != nil {
+			return nil, fmt.Errorf("could not get value '%s' for command: %w", f.Key, err)
+		}
+
 		switch f.Key {
 		case "syntax":
-			p.Tokens = tokenizeCommandSyntax(*f.Value.String)
+			p.Tokens = tokenizeCommandSyntax(value.S)
 		case "noMatch":
-			p.NoMatchMessage = *f.Value.String
+			p.NoMatchMessage = value.S
 		case "help":
-			p.HelpMessage = *f.Value.String
+			p.HelpMessage = value.S
 		default:
 			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %s", f.Key)
 			return nil, err
@@ -895,6 +915,42 @@ func buildPrimary(def *ast.Primary) (expressions.Expression, error) {
 		}, nil
 	case def.SubExpression != nil:
 		return buildExpression(def.SubExpression)
+	case def.List != nil:
+		// Numbers
+		if len(def.List.Numbers) > 0 {
+			il := make([]int, len(def.List.Numbers))
+			copy(il, def.List.Numbers)
+			return &expressions.ExpressionConst{
+				V: models.Value{K: models.KindIntList, IL: il},
+			}, nil
+		}
+
+		// Strings (tokens include quotes; strip them)
+		if len(def.List.Strings) > 0 {
+			sl := make([]string, len(def.List.Strings))
+			for i, s := range def.List.Strings {
+				if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+					s = s[1 : len(s)-1]
+				}
+				sl[i] = s
+			}
+			return &expressions.ExpressionConst{
+				V: models.Value{K: models.KindStringList, SL: sl},
+			}, nil
+		}
+
+		// Bools (parsed as "true"/"false" tokens)
+		if len(def.List.Bools) > 0 {
+			bl := make([]bool, len(def.List.Bools))
+			for i, b := range def.List.Bools {
+				bl[i] = (b == "true")
+			}
+			return &expressions.ExpressionConst{
+				V: models.Value{K: models.KindBoolList, BL: bl},
+			}, nil
+		}
+
+		return nil, fmt.Errorf("empty list literal")
 	default:
 		return nil, fmt.Errorf("invalid primary")
 	}
@@ -950,7 +1006,6 @@ func mapUnaryOp(tok string) (expressions.UnaryOp, error) {
 	return 0, fmt.Errorf("bad unary op %q", tok)
 }
 
-// Optional: tiny constant folder (post-order).
 func foldConst(n expressions.Expression) expressions.Expression {
 	switch t := n.(type) {
 	case *expressions.ExpressionUnary:
@@ -979,4 +1034,32 @@ func foldConst(n expressions.Expression) expressions.Expression {
 	default:
 		return n
 	}
+}
+
+// build and immediately evaluate an expression with an empty event into a value
+func immediateEvalExpression(ex *ast.Expression) (models.Value, error) {
+	expr, err := buildExpression(ex)
+	if err != nil {
+		return models.VNil(), fmt.Errorf("building expression during compilation: %w", err)
+	}
+
+	value, err := expr.Eval(nil)
+	if err != nil {
+		return models.VNil(), fmt.Errorf("evaluating expression during compilation: %w", err)
+	}
+
+	return value, nil
+}
+
+func immediateEvalExpressionAs(ex *ast.Expression, expectedKind models.Kind) (models.Value, error) {
+	value, err := immediateEvalExpression(ex)
+	if err != nil {
+		return models.VNil(), err
+	}
+
+	if value.K != expectedKind {
+		return models.VNil(), fmt.Errorf("value from expression is of wrong type")
+	}
+
+	return value, nil
 }
