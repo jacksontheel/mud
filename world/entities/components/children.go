@@ -10,6 +10,7 @@ type Children struct {
 	revealed bool
 	prefix   string
 
+	// TODO rename child -> children
 	childByAlias   map[string][]*entities.Entity
 	aliasesByChild map[*entities.Entity][]string
 }
@@ -122,4 +123,14 @@ func (c *Children) HasChild(e *entities.Entity) bool {
 	_, ok := c.aliasesByChild[e]
 
 	return ok
+}
+
+func (c *Children) ReindexAliasesForEntity(e *entities.Entity) error {
+	c.RemoveChild(e)
+	err := c.AddChild(e)
+	if err != nil {
+		return fmt.Errorf("error reindexing aliases for entity '%s': %w", e.Name, err)
+	}
+
+	return nil
 }

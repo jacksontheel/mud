@@ -76,8 +76,9 @@ type ThenBlock struct {
 }
 
 type FieldDef struct {
-	Key   string   `parser:"@Ident 'is'"`
-	Value *Literal `parser:"@@"`
+	Key   string      `parser:"@Ident 'is'"`
+	Value *Expression `parser:"@@"`
+	Pairs []KV        `parser:"| '{' @@ { ',' @@ } '}'"`
 }
 
 type KV struct {

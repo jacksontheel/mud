@@ -1,6 +1,8 @@
 package entities
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ComponentType int
 
@@ -75,4 +77,5 @@ type IChildren interface {
 	GetChildren() []*Entity
 	GetChildrenByAlias(alias string) []AmbiguityOption
 	HasChild(e *Entity) bool
+	ReindexAliasesForEntity(e *Entity) error
 }
