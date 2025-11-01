@@ -35,7 +35,23 @@ func NewEntity(name, description string, aliases []string, tags []string, fields
 }
 
 func (e *Entity) Copy(parent ComponentWithChildren) *Entity {
-	newEntity := NewEntity(e.Name, e.Description, e.Aliases, e.Tags, e.Fields, parent)
+	fieldsCopy := make(map[string]models.Value, len(e.Fields))
+	for k, v := range e.Fields {
+		fieldsCopy[k] = v
+	}
+
+	aliasesCopy := append([]string(nil), e.Aliases...)
+	tagsCopy := append([]string(nil), e.Tags...)
+
+	newEntity := NewEntity(
+		e.Name,
+		e.Description,
+		aliasesCopy,
+		tagsCopy,
+		fieldsCopy,
+		parent,
+	)
+
 	for _, c := range e.components {
 		newEntity.Add(c.Copy())
 	}
