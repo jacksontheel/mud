@@ -21,80 +21,80 @@ var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
 })
 
 type DSL struct {
-	Declarations []*TopLevel `@@*`
+	Declarations []*TopLevel `parser:"@@*"`
 }
 
 type TopLevel struct {
-	Entity  *EntityDef  `"entity" @@`
-	Trait   *TraitDef   `| "trait" @@`
-	Command *CommandDef `| "command" @@`
+	Entity  *EntityDef  `parser:"'entity' @@"`
+	Trait   *TraitDef   `parser:"| 'trait' @@"`
+	Command *CommandDef `parser:"| 'command' @@"`
 }
 
 type EntityDef struct {
-	Name   string         `@Ident`
-	Blocks []*EntityBlock `"{" { @@ } "}"`
+	Name   string         `parser:"@Ident"`
+	Blocks []*EntityBlock `parser:"'{' { @@ } '}'"`
 }
 
 type TraitDef struct {
-	Name   string         `@Ident`
-	Blocks []*EntityBlock `"{" { @@ } "}"`
+	Name   string         `parser:"@Ident"`
+	Blocks []*EntityBlock `parser:"'{' { @@ } '}'"`
 }
 
 type EntityBlock struct {
-	Component *ComponentDef        `  "component" @@ `
-	Trait     *TraitInheritanceDef `| "trait" @@`
-	Reaction  *ReactionDef         `| "react" @@ `
-	Field     *FieldDef            `| @@`
+	Component *ComponentDef        `parser:"  'component' @@"`
+	Trait     *TraitInheritanceDef `parser:"| 'trait' @@"`
+	Reaction  *ReactionDef         `parser:"| 'react' @@"`
+	Field     *FieldDef            `parser:"| @@"`
 }
 
 type ComponentDef struct {
-	Name   string      `@Ident`
-	Fields []*FieldDef `"{" { @@ } "}"`
+	Name   string      `parser:"@Ident"`
+	Fields []*FieldDef `parser:"'{' { @@ } '}'"`
 }
 
 type TraitInheritanceDef struct {
-	Name   string      `@Ident`
-	Fields []*FieldDef `("{" { @@ } "}")?`
+	Name   string      `parser:"@Ident"`
+	Fields []*FieldDef `parser:"( '{' { @@ } '}' )?"`
 }
 
 type ReactionDef struct {
-	Command string     `@Ident`
-	Rules   []*RuleDef `"{" { @@ } "}"`
+	Command string     `parser:"@Ident"`
+	Rules   []*RuleDef `parser:"'{' { @@ } '}'"`
 }
 
 type RuleDef struct {
-	When *WhenBlock `[ "when" @@ ]`
-	Then *ThenBlock `"then" @@`
+	When *WhenBlock `parser:"[ 'when' @@ ]"`
+	Then *ThenBlock `parser:"'then' @@"`
 }
 
 type WhenBlock struct {
-	Conds []*ConditionDef `"{" { @@ } "}"`
+	Conds []*ConditionDef `parser:"'{' { @@ } '}'"`
 }
 
 type ThenBlock struct {
-	Actions []*ActionDef `"{" { @@ } "}"`
+	Actions []*ActionDef `parser:"'{' { @@ } '}'"`
 }
 
 type FieldDef struct {
-	Key   string   `@Ident "is"`
-	Value *Literal `@@`
+	Key   string   `parser:"@Ident 'is'"`
+	Value *Literal `parser:"@@"`
 }
 
 type KV struct {
-	Key   string `@String`
-	Value string `":" @String`
+	Key   string `parser:"@String"`
+	Value string `parser:"':' @String"`
 }
 
 type CommandDef struct {
-	Name   string          `@Ident`
-	Blocks []*CommandBlock `"{" { @@ } "}"`
+	Name   string          `parser:"@Ident"`
+	Blocks []*CommandBlock `parser:"'{' { @@ } '}'"`
 }
 
 type CommandBlock struct {
-	Field                *FieldDef             `  @@`
-	CommandDefinitionDef *CommandDefinitionDef `| @@`
+	Field                *FieldDef             `parser:"  @@"`
+	CommandDefinitionDef *CommandDefinitionDef `parser:"| @@"`
 }
 
 type CommandDefinitionDef struct {
-	Fields []*FieldDef `"pattern" "{" { @@ } "}"`
+	Fields []*FieldDef `parser:"'pattern' '{' { @@ } '}'"`
 }

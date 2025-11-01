@@ -3,49 +3,49 @@ package ast
 // Expressions are adapted from a Participle example (https://github.com/alecthomas/participle/blob/master/_examples/expr2/main.go)
 
 type Expression struct {
-	Equality *Equality `@@`
+	Equality *Equality `parser:"@@"`
 }
 
 type Equality struct {
-	Comparison *Comparison `@@`
-	Op         string      `( @( "!" "=" | "==" )`
-	Next       *Equality   `  @@ )*`
+	Comparison *Comparison `parser:"@@"`
+	Op         string      `parser:"( @( '!' '=' | '==' )"`
+	Next       *Equality   `parser:"  @@ )*"`
 }
 
 type Comparison struct {
-	Addition *Addition   `@@`
-	Op       string      `( @( ">" | ">=" | "<" | "<=" )`
-	Next     *Comparison `  @@ )*`
+	Addition *Addition   `parser:"@@"`
+	Op       string      `parser:"( @( '>' | '>=' | '<' | '<=' )"`
+	Next     *Comparison `parser:"  @@ )*"`
 }
 
 type Addition struct {
-	Multiplication *Multiplication `@@`
-	Op             string          `( @( "-" | "+" )`
-	Next           *Addition       `  @@ )*`
+	Multiplication *Multiplication `parser:"@@"`
+	Op             string          `parser:"( @( '-' | '+' )"`
+	Next           *Addition       `parser:"  @@ )*"`
 }
 
 type Multiplication struct {
-	Unary *Unary          `@@`
-	Op    string          `( @( "/" | "*" )`
-	Next  *Multiplication `  @@ )*`
+	Unary *Unary          `parser:"@@"`
+	Op    string          `parser:"( @( '/' | '*' )"`
+	Next  *Multiplication `parser:"  @@ )*"`
 }
 
 type Unary struct {
-	Op      string   `  ( @( "!" | "-" )`
-	Unary   *Unary   `    @@ )`
-	Primary *Primary `| @@`
+	Op      string   `parser:"  ( @( '!' | '-' )"`
+	Unary   *Unary   `parser:"    @@ )"`
+	Primary *Primary `parser:"| @@"`
 }
 
 type Primary struct {
-	Number        *int        `  @Int`
-	String        *string     `| @String`
-	Bool          *string     `| @( "true" | "false" )`
-	Field         *Field      `| @@`
-	SubExpression *Expression `| "(" @@ ")" `
-	Nil           bool        `| @"nil"`
+	Number        *int        `parser:"  @Int"`
+	String        *string     `parser:"| @String"`
+	Bool          *string     `parser:"| @( 'true' | 'false' )"`
+	Field         *Field      `parser:"| @@"`
+	SubExpression *Expression `parser:"| '(' @@ ')' "`
+	Nil           bool        `parser:"| @'nil'"`
 }
 
 type Field struct {
-	Role string `@Ident`
-	Name string `("." @Ident)?`
+	Role string `parser:"@Ident"`
+	Name string `parser:"( '.' @Ident )?"`
 }

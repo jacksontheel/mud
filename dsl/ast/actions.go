@@ -1,48 +1,48 @@
 package ast
 
 type ActionDef struct {
-	Print                *PrintAction          `  "print" @@`
-	Publish              *PublishAction        `| "publish" @@`
-	Copy                 *CopyAction           `| "copy" @@`
-	Move                 *MoveAction           `| "move" @@`
-	SetField             *SetFieldAction       `| "set" @@`
-	DestroyAction        *DestroyAction        `| "destroy" @@`
-	RevealChildrenAction *RevealChildrenAction `| @@`
+	Print                *PrintAction          `parser:"  'print' @@"`
+	Publish              *PublishAction        `parser:"| 'publish' @@"`
+	Copy                 *CopyAction           `parser:"| 'copy' @@"`
+	Move                 *MoveAction           `parser:"| 'move' @@"`
+	SetField             *SetFieldAction       `parser:"| 'set' @@"`
+	DestroyAction        *DestroyAction        `parser:"| 'destroy' @@"`
+	RevealChildrenAction *RevealChildrenAction `parser:"| @@"`
 }
 
 type PrintAction struct {
-	Target string `@Ident`
-	Value  string ` @String`
+	Target string `parser:"@Ident"`
+	Value  string `parser:"@String"`
 }
 
 type PublishAction struct {
-	Value string ` @String`
+	Value string `parser:"@String"`
 }
 
 type CopyAction struct {
-	EntityId  string `@String`
-	Target    string `"to" @Ident `
-	Component string `"." @Ident`
+	EntityId  string `parser:"@String"`
+	Target    string `parser:"'to' @Ident"`
+	Component string `parser:"'.' @Ident"`
 }
 
 type MoveAction struct {
-	RoleObject      string ` @Ident`
-	RoleDestination string ` "to" @Ident`
-	Component       string `"." @Ident`
+	RoleObject      string `parser:"@Ident"`
+	RoleDestination string `parser:"'to' @Ident"`
+	Component       string `parser:"'.' @Ident"`
 }
 
 type SetFieldAction struct {
-	Role  string     `@Ident`
-	Field string     `"." @Ident`
-	Expr  Expression `"to" @@`
+	Role  string     `parser:"@Ident"`
+	Field string     `parser:"'.' @Ident"`
+	Expr  Expression `parser:"'to' @@"`
 }
 
 type RevealChildrenAction struct {
-	Set       string `@("reveal" | "hide")`
-	Role      string `@Ident`
-	Component string `"." @Ident`
+	Set       string `parser:"@('reveal' | 'hide')"`
+	Role      string `parser:"@Ident"`
+	Component string `parser:"'.' @Ident"`
 }
 
 type DestroyAction struct {
-	Role string `@Ident`
+	Role string `parser:"@Ident"`
 }
