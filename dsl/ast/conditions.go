@@ -1,57 +1,57 @@
 package ast
 
 type ConditionDef struct {
-	Or *OrChain `@@`
+	Or *OrChain `parser:"@@"`
 }
 
 type OrChain struct {
-	First *CondAtom     `@@`
-	Rest  []*OrChainRhs `( "or" @@ )*`
+	First *CondAtom     `parser:"@@"`
+	Rest  []*OrChainRhs `parser:"( 'or' @@ )*"`
 }
 
 type OrChainRhs struct {
-	Next *CondAtom `@@`
+	Next *CondAtom `parser:"@@"`
 }
 
 type CondAtom struct {
-	Paren      *ConditionDef             `  "(" @@ ")"`
-	Not        *NotCondition             `| @@`
-	Expr       *ExprCondition            `| @@`
-	HasTag     *HasTagCondition          `| @@`
-	IsPresent  *IsPresentCondition       `| @@`
-	RolesEqual *EventRolesEqualCondition `| @@`
-	HasChild   *HasChildCondition        `| @@`
-	MsgHas     *MessageContains          `| @@`
+	Paren      *ConditionDef             `parser:"  '(' @@ ')'"`
+	Not        *NotCondition             `parser:"| @@"`
+	Expr       *ExprCondition            `parser:"| @@"`
+	HasTag     *HasTagCondition          `parser:"| @@"`
+	IsPresent  *IsPresentCondition       `parser:"| @@"`
+	RolesEqual *EventRolesEqualCondition `parser:"| @@"`
+	HasChild   *HasChildCondition        `parser:"| @@"`
+	MsgHas     *MessageContains          `parser:"| @@"`
 }
 
 type NotCondition struct {
-	Cond *ConditionDef `"not" @@`
+	Cond *ConditionDef `parser:"'not' @@"`
 }
 
 type ExprCondition struct {
-	Expr *Expression `"expr" "{" @@ "}"`
+	Expr *Expression `parser:"'expr' '{' @@ '}'"`
 }
 
 type HasTagCondition struct {
-	Target string `@Ident`
-	Tag    string `"has" "tag" @String`
+	Target string `parser:"@Ident"`
+	Tag    string `parser:"'has' 'tag' @String"`
 }
 
 type IsPresentCondition struct {
-	Role string `@Ident "exists"`
+	Role string `parser:"@Ident 'exists'"`
 }
 
 type EventRolesEqualCondition struct {
-	Role1 string `@Ident`
-	Role2 string `"is" @Ident`
+	Role1 string `parser:"@Ident"`
+	Role2 string `parser:"'is' @Ident"`
 }
 
 type HasChildCondition struct {
-	ChildRole  string `@Ident`
-	ParentRole string `"in" @Ident`
-	Component  string `"." @Ident`
+	ChildRole  string `parser:"@Ident"`
+	ParentRole string `parser:"'in' @Ident"`
+	Component  string `parser:"'.' @Ident"`
 }
 
 type MessageContains struct {
-	Message string `"message" "contains" @String`
+	Message string `parser:"'message' 'contains' @String"`
 }
