@@ -13,10 +13,6 @@ type Print struct {
 
 var _ entities.Action = &Print{}
 
-func (p *Print) Id() entities.ActionType {
-	return entities.ActionPrint
-}
-
 func (p *Print) Execute(ev *entities.Event) error {
 	if ev.Publisher == nil {
 		return fmt.Errorf("publisher in event may not be nil for print action")

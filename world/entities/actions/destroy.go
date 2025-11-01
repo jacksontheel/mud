@@ -12,10 +12,6 @@ type Destroy struct {
 
 var _ entities.Action = &Destroy{}
 
-func (d *Destroy) Id() entities.ActionType {
-	return entities.ActionDestroy
-}
-
 func (d *Destroy) Execute(ev *entities.Event) error {
 
 	var role *entities.Entity
