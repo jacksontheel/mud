@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	StartingRoom string `yaml:"startingRoom"`
+	StartingRoom    string `yaml:"startingRoom"`
+	PlayerRateLimit int    `yaml:"playerRateLimit"`
 }
 
 func Load(path string) (*Config, error) {

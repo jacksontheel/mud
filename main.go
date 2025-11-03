@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"example.com/mud/config"
 	"example.com/mud/dsl"
@@ -17,7 +18,7 @@ import (
 	"example.com/mud/world/player"
 )
 
-func handleConnection(conn net.Conn, gameWorld *world.World) {
+func handleConnection(conn net.Conn, gameWorld *world.World, cfg *config.Config) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	var name string
@@ -67,7 +68,7 @@ func handleConnection(conn net.Conn, gameWorld *world.World) {
 	// notify when outgoing messages end
 	done := make(chan struct{})
 	go func() {
-		handleConnectionOutgoing(conn, gameWorld, player)
+		handleConnectionOutgoing(conn, gameWorld, player, cfg)
 		close(done)
 	}()
 
@@ -84,7 +85,7 @@ func handleConnectionIncoming(conn net.Conn, inbox chan string) {
 	}()
 }
 
-func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *player.Player) {
+func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *player.Player, cfg *config.Config) {
 	scanner := bufio.NewScanner(conn)
 	for {
 		if !scanner.Scan() {
@@ -130,6 +131,11 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *pla
 			player.Pending = nil
 		}
 
+		if coolDownTime := player.CooldownRemaining(); coolDownTime > 0 {
+			fmt.Fprintf(conn, "You need to catch your breath. Try again in %.1fs\r\n", coolDownTime.Seconds())
+			continue
+		}
+
 		message, err := gameWorld.Parse(player, line)
 		if err != nil {
 			var amb *entities.AmbiguityError
@@ -150,6 +156,8 @@ func handleConnectionOutgoing(conn net.Conn, gameWorld *world.World, player *pla
 		} else if message != "" {
 			fmt.Fprintln(conn, message)
 		}
+
+		player.StartCooldown(time.Duration(cfg.PlayerRateLimit) * time.Millisecond)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -209,6 +217,6 @@ func main() {
 			fmt.Println("Error accepting connection:", err)
 			continue
 		}
-		go handleConnection(conn, gameWorld)
+		go handleConnection(conn, gameWorld, cfg)
 	}
 }
