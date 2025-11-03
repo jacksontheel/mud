@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
+	"time"
 
 	"example.com/mud/models"
 	"example.com/mud/utils"
@@ -20,7 +22,9 @@ type Player struct {
 	CurrentRoom *entities.Entity
 	Pending     *entities.PendingAction
 
-	world World
+	mu           sync.Mutex
+	nextActionAt time.Time
+	world        World
 }
 
 type World interface {
@@ -74,6 +78,22 @@ func NameValidation(name string) string {
 	}
 
 	return ""
+}
+
+func (p *Player) CooldownRemaining() time.Duration {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	now := time.Now()
+	if now.Before(p.nextActionAt) {
+		return time.Until(p.nextActionAt)
+	}
+	return 0
+}
+
+func (p *Player) StartCooldown(d time.Duration) {
+	p.mu.Lock()
+	p.nextActionAt = time.Now().Add(d)
+	p.mu.Unlock()
 }
 
 func (p *Player) GetRoomDescription() (string, error) {
