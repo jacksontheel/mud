@@ -1,0 +1,13 @@
+template: testify
+formatter: goimports
+log-level: info
+
+# Put all mocks in a single folder, with a single package name
+dir: "mocks"
+filename: "{{.InterfaceName | snakecase}}_mock.go"
+pkgname: "mocks"
+
+packages:
+  example.com/mud/world/entities:
+    interfaces:
+      Publisher: {}

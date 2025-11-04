@@ -18,16 +18,9 @@ func (p *Print) Execute(ev *entities.Event) error {
 		return fmt.Errorf("publisher in event may not be nil for print action")
 	}
 
-	var recipient *entities.Entity
-	switch p.EventRole {
-	case entities.EventRoleSource:
-		recipient = ev.Source
-	case entities.EventRoleInstrument:
-		recipient = ev.Instrument
-	case entities.EventRoleTarget:
-		recipient = ev.Target
-	default:
-		return fmt.Errorf("invalid role '%s' for print action", p.EventRole.String())
+	recipient, err := ev.GetRole(p.EventRole)
+	if err != nil {
+		return fmt.Errorf("Copy execute: %w", err)
 	}
 
 	message, err := entities.FormatEventMessage(p.Text, ev)
