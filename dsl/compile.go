@@ -885,6 +885,16 @@ func buildUnary(def *ast.Unary) (expressions.Expression, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if op == expressions.UDice {
+			// "d 6" is syntactical sugar for "1 d 6"
+			return &expressions.ExpressionBinary{
+				Op:    expressions.OpDice,
+				Left:  &expressions.ExpressionConst{V: models.VInt(1)},
+				Right: sub,
+			}, nil
+		}
+
 		return foldConst(&expressions.ExpressionUnary{Op: op, Sub: sub}), nil
 	}
 	return buildPrimary(def.Primary)
@@ -995,15 +1005,20 @@ func mapMulOp(tok string, l, r expressions.Expression) (expressions.Expression, 
 		return &expressions.ExpressionBinary{Op: expressions.OpMul, Left: l, Right: r}, nil
 	case "/":
 		return &expressions.ExpressionBinary{Op: expressions.OpDiv, Left: l, Right: r}, nil
+	case "$d":
+		return &expressions.ExpressionBinary{Op: expressions.OpDice, Left: l, Right: r}, nil
 	}
 	return nil, fmt.Errorf("bad mul op %q", tok)
 }
+
 func mapUnaryOp(tok string) (expressions.UnaryOp, error) {
 	switch tok {
 	case "!":
 		return expressions.UNot, nil
 	case "-":
 		return expressions.UNeg, nil
+	case "$d":
+		return expressions.UDice, nil
 	}
 	return 0, fmt.Errorf("bad unary op %q", tok)
 }
@@ -1025,7 +1040,14 @@ func foldConst(n expressions.Expression) expressions.Expression {
 		r := foldConst(t.Right)
 		if lc, ok := l.(*expressions.ExpressionConst); ok {
 			if rc, ok := r.(*expressions.ExpressionConst); ok {
-				v, err := (&expressions.ExpressionBinary{Op: t.Op, Left: lc, Right: rc}).Eval(nil)
+				folded := &expressions.ExpressionBinary{Op: t.Op, Left: lc, Right: rc}
+
+				// don't fold d operator, it should be random every time.
+				if t.Op == expressions.OpDice {
+					return folded
+				}
+
+				v, err := (folded).Eval(nil)
 				if err == nil {
 					return &expressions.ExpressionConst{V: v}
 				}

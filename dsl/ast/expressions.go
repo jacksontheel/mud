@@ -12,7 +12,7 @@ type Expression struct {
 
 type Equality struct {
 	Comparison *Comparison `parser:"@@"`
-	Op         string      `parser:"( @( '!' '=' | '==' )"`
+	Op         string      `parser:"( @( '!=' | '==' )"`
 	Next       *Equality   `parser:"  @@ )*"`
 }
 
@@ -30,13 +30,13 @@ type Addition struct {
 
 type Multiplication struct {
 	Unary *Unary          `parser:"@@"`
-	Op    string          `parser:"( @( '/' | '*' )"`
+	Op    string          `parser:"( @( '/' | '*' | '$d' )"`
 	Next  *Multiplication `parser:"  @@ )*"`
 }
 
 type Unary struct {
-	Op      string   `parser:"  ( @( '!' | '-' )"`
-	Unary   *Unary   `parser:"    @@ )"`
+	Op      string   `parser:"  ( @( '!' | '-' | '$d' )"`
+	Unary   *Unary   `parser:"   @@ )"`
 	Primary *Primary `parser:"| @@"`
 }
 

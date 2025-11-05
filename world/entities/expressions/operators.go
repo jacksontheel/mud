@@ -13,6 +13,7 @@ const (
 	OpSub
 	OpMul
 	OpDiv
+	OpDice
 )
 
 type UnaryOp uint8
@@ -20,4 +21,5 @@ type UnaryOp uint8
 const (
 	UNot UnaryOp = iota
 	UNeg
+	UDice
 )
