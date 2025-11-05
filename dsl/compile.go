@@ -239,7 +239,9 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 				return nil, err
 			}
 			// rules at the entity level come first
-			rulesByCommand[block.Reaction.Command] = append(rules, rulesByCommand[block.Reaction.Command]...)
+			for _, command := range block.Reaction.Commands {
+				rulesByCommand[command] = append(rules, rulesByCommand[command]...)
+			}
 		} else if block.Component != nil {
 			// process component into prototype without children
 			comp, err := processComponentPrototype(block.Component)
@@ -506,7 +508,7 @@ func buildReaction(def *ast.ReactionDef) ([]*entities.Rule, error) {
 	for _, r := range def.Rules {
 		rule, err := buildRule(r)
 		if err != nil {
-			return nil, fmt.Errorf("could not build reaction for %s: %w", def.Command, err)
+			return nil, fmt.Errorf("could not build reaction for %s: %w", def.Commands[0], err)
 		}
 
 		rules = append(rules, rule)

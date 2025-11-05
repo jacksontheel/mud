@@ -58,8 +58,8 @@ type TraitInheritanceDef struct {
 }
 
 type ReactionDef struct {
-	Command string     `parser:"@Ident"`
-	Rules   []*RuleDef `parser:"'{' { @@ } '}'"`
+	Commands []string   `parser:"@Ident { ',' @Ident }"`
+	Rules    []*RuleDef `parser:"'{' { @@ } '}'"`
 }
 
 type RuleDef struct {
