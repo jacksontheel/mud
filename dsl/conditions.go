@@ -1,4 +1,4 @@
-package ast
+package dsl
 
 type ConditionDef struct {
 	Or *OrChain `parser:"@@"`
