@@ -3,13 +3,17 @@ package dsl
 import (
 	"fmt"
 
-	"example.com/mud/dsl/ast"
 	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 )
 
-type componentBuilder func(def *ast.ComponentDef) (entities.Component, error)
+type ComponentDef struct {
+	Name   string      `parser:"@Ident"`
+	Fields []*FieldDef `parser:"'{' { @@ } '}'"`
+}
+
+type componentBuilder func(def *ComponentDef) (entities.Component, error)
 
 var componentBuilders = map[string]componentBuilder{}
 
@@ -23,14 +27,14 @@ func init() {
 	registerComponentBuilder("Container", buildContainer)
 }
 
-func processComponentPrototype(def *ast.ComponentDef) (entities.Component, error) {
+func (def *ComponentDef) Build() (entities.Component, error) {
 	if b, ok := componentBuilders[def.Name]; ok {
 		return b(def)
 	}
 	return nil, fmt.Errorf("could not match component name %s", def.Name)
 }
 
-func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
+func buildRoom(def *ComponentDef) (entities.Component, error) {
 	rm := components.NewRoom()
 	rm.GetChildren().SetPrefix("In the room")
 
@@ -80,7 +84,7 @@ func buildRoom(def *ast.ComponentDef) (entities.Component, error) {
 	return rm, nil
 }
 
-func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
+func buildInventory(def *ComponentDef) (entities.Component, error) {
 	inventory := components.NewInventory()
 	for _, f := range def.Fields {
 		value, err := immediateEvalExpression(f.Value)
@@ -108,7 +112,7 @@ func buildInventory(def *ast.ComponentDef) (entities.Component, error) {
 	return inventory, nil
 }
 
-func buildContainer(def *ast.ComponentDef) (entities.Component, error) {
+func buildContainer(def *ComponentDef) (entities.Component, error) {
 	container := components.NewContainer()
 	for _, f := range def.Fields {
 		value, err := immediateEvalExpression(f.Value)

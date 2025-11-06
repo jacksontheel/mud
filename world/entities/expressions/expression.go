@@ -2,6 +2,7 @@ package expressions
 
 import (
 	"fmt"
+	"math/rand"
 
 	"example.com/mud/models"
 	"example.com/mud/world/entities"
@@ -39,6 +40,27 @@ func (ef *ExpressionField) Eval(ev *entities.Event) (models.Value, error) {
 	}
 
 	return e.GetField(ef.F.Name), nil
+}
+
+type ExpressionDice struct {
+	Count int
+	Sides int
+}
+
+func (ed *ExpressionDice) Eval(ev *entities.Event) (models.Value, error) {
+	if ed.Count <= 0 {
+		return models.Value{}, fmt.Errorf("dice count must be > 0 (got %d)", ed.Count)
+	}
+
+	if ed.Count <= 0 {
+		return models.Value{}, fmt.Errorf("dice sides must be > 0 (got %d)", ed.Sides)
+	}
+
+	total := 0
+	for i := 0; i < ed.Count; i++ {
+		total += 1 + rand.Intn(ed.Sides)
+	}
+	return models.VInt(total), nil
 }
 
 type ExpressionUnary struct {
@@ -110,7 +132,7 @@ func (n *ExpressionBinary) Eval(ev *entities.Event) (models.Value, error) {
 			return models.VStr(l.S + r.S), nil
 		}
 		return models.Value{}, fmt.Errorf("+ expects int+int or string+string")
-	case OpSub, OpMul, OpDiv:
+	case OpSub, OpMul, OpDiv, OpDice:
 		if l.K != models.KindInt || r.K != models.KindInt {
 			return models.Value{}, fmt.Errorf("arithmetic expects ints")
 		}
@@ -124,6 +146,22 @@ func (n *ExpressionBinary) Eval(ev *entities.Event) (models.Value, error) {
 				return models.Value{}, fmt.Errorf("division by zero")
 			}
 			return models.VInt(l.I / r.I), nil
+		case OpDice:
+			// Validate count (left) > 0
+			if l.I <= 0 {
+				return models.Value{}, fmt.Errorf("dice count must be > 0 (got %d)", l.I)
+			}
+
+			// Validate sides (right) > 0
+			if r.I <= 0 {
+				return models.Value{}, fmt.Errorf("dice sides must be > 0 (got %d)", r.I)
+			}
+
+			total := 0
+			for i := 0; i < l.I; i++ {
+				total += 1 + rand.Intn(r.I)
+			}
+			return models.VInt(total), nil
 		}
 	}
 	return models.Value{}, fmt.Errorf("bad binary op")

@@ -7,15 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"example.com/mud/dsl/ast"
 	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	participle "github.com/alecthomas/participle/v2"
 )
 
 func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
-	parser, err := participle.Build[ast.DSL](
-		participle.Lexer(ast.DslLexer),
+	parser, err := participle.Build[DSL](
+		participle.Lexer(DslLexer),
 		participle.Elide("Whitespace", "Comment"),
 		participle.Unquote("String"),
 	)
@@ -23,7 +22,7 @@ func LoadEntitiesFromDirectory(directoryName string) (map[string]*entities.Entit
 		return nil, nil, fmt.Errorf("parser build failed %w", err)
 	}
 
-	var ast = &ast.DSL{}
+	var ast = &DSL{}
 
 	err = filepath.WalkDir(directoryName, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
