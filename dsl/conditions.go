@@ -93,85 +93,100 @@ func (def *CondAtom) Build() (entities.Condition, error) {
 		return nil, fmt.Errorf("empty condition atom")
 	}
 
-	if def.Paren != nil {
+	switch {
+	case def.Paren != nil:
 		return def.Paren.Build()
-	}
-
-	if def.Not != nil {
-		inner, err := def.Not.Cond.Build()
-		if err != nil {
-			return nil, fmt.Errorf("not condition: %w", err)
-		}
-		return &conditions.Not{Cond: inner}, nil
-	}
-
-	if def.Expr != nil {
-		expression, err := def.Expr.Expr.Build()
-		if err != nil {
-			return nil, fmt.Errorf("condition expression: %w", err)
-		}
-		return &conditions.ExpressionTrue{Expression: expression}, nil
-	}
-
-	if def.HasTag != nil {
-		eventRole, err := entities.ParseEventRole(def.HasTag.Target)
-		if err != nil {
-			return nil, fmt.Errorf("could not build has tag condition: %w", err)
-		}
-		return &conditions.HasTag{
-			EventRole: eventRole,
-			Tag:       def.HasTag.Tag,
-		}, nil
-	}
-
-	if def.IsPresent != nil {
-		eventRole, err := entities.ParseEventRole(def.IsPresent.Role)
-		if err != nil {
-			return nil, fmt.Errorf("could not build is-present condition: %w", err)
-		}
-		return &conditions.IsPresent{EventRole: eventRole}, nil
-	}
-
-	if def.RolesEqual != nil {
-		role1, err := entities.ParseEventRole(def.RolesEqual.Role1)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-		role2, err := entities.ParseEventRole(def.RolesEqual.Role2)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-		return &conditions.EventRolesEqual{
-			EventRole1: role1,
-			EventRole2: role2,
-		}, nil
-	}
-
-	if def.HasChild != nil {
-		parentRole, err := entities.ParseEventRole(def.HasChild.ParentRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		component, err := entities.ParseComponentType(def.HasChild.Component)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		childRole, err := entities.ParseEventRole(def.HasChild.ChildRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		return &conditions.HasChild{
-			ParentRole:    parentRole,
-			ComponentType: component,
-			ChildRole:     childRole,
-		}, nil
-	}
-
-	if def.MsgHas != nil {
-		return &conditions.MessageContains{
-			MessageRegex: strings.ToLower(def.MsgHas.Message),
-		}, nil
+	case def.Not != nil:
+		return def.Not.Build()
+	case def.Expr != nil:
+		return def.Expr.Build()
+	case def.HasTag != nil:
+		return def.HasTag.Build()
+	case def.IsPresent != nil:
+		return def.IsPresent.Build()
+	case def.RolesEqual != nil:
+		return def.RolesEqual.Build()
+	case def.HasChild != nil:
+		return def.HasChild.Build()
+	case def.MsgHas != nil:
+		return def.MsgHas.Build()
 	}
 
 	return nil, fmt.Errorf("unrecognized condition def")
+}
+
+func (def *NotCondition) Build() (entities.Condition, error) {
+	inner, err := def.Cond.Build()
+	if err != nil {
+		return nil, fmt.Errorf("not condition: %w", err)
+	}
+	return &conditions.Not{Cond: inner}, nil
+}
+
+func (def *ExprCondition) Build() (entities.Condition, error) {
+	expression, err := def.Expr.Build()
+	if err != nil {
+		return nil, fmt.Errorf("condition expression: %w", err)
+	}
+	return &conditions.ExpressionTrue{Expression: expression}, nil
+}
+
+func (def *HasTagCondition) Build() (entities.Condition, error) {
+	eventRole, err := entities.ParseEventRole(def.Target)
+	if err != nil {
+		return nil, fmt.Errorf("could not build has tag condition: %w", err)
+	}
+	return &conditions.HasTag{
+		EventRole: eventRole,
+		Tag:       def.Tag,
+	}, nil
+}
+
+func (def *IsPresentCondition) Build() (entities.Condition, error) {
+	eventRole, err := entities.ParseEventRole(def.Role)
+	if err != nil {
+		return nil, fmt.Errorf("could not build is-present condition: %w", err)
+	}
+	return &conditions.IsPresent{EventRole: eventRole}, nil
+}
+
+func (def *EventRolesEqualCondition) Build() (entities.Condition, error) {
+	role1, err := entities.ParseEventRole(def.Role1)
+	if err != nil {
+		return nil, fmt.Errorf("event roles equal condition: %w", err)
+	}
+	role2, err := entities.ParseEventRole(def.Role2)
+	if err != nil {
+		return nil, fmt.Errorf("event roles equal condition: %w", err)
+	}
+	return &conditions.EventRolesEqual{
+		EventRole1: role1,
+		EventRole2: role2,
+	}, nil
+}
+
+func (def *HasChildCondition) Build() (entities.Condition, error) {
+	parentRole, err := entities.ParseEventRole(def.ParentRole)
+	if err != nil {
+		return nil, fmt.Errorf("has child condition: %w", err)
+	}
+	component, err := entities.ParseComponentType(def.Component)
+	if err != nil {
+		return nil, fmt.Errorf("has child condition: %w", err)
+	}
+	childRole, err := entities.ParseEventRole(def.ChildRole)
+	if err != nil {
+		return nil, fmt.Errorf("has child condition: %w", err)
+	}
+	return &conditions.HasChild{
+		ParentRole:    parentRole,
+		ComponentType: component,
+		ChildRole:     childRole,
+	}, nil
+}
+
+func (def *MessageContains) Build() (entities.Condition, error) {
+	return &conditions.MessageContains{
+		MessageRegex: strings.ToLower(def.Message),
+	}, nil
 }
