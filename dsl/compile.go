@@ -2,20 +2,16 @@ package dsl
 
 import (
 	"fmt"
-	"strings"
 
-	"example.com/mud/dsl/ast"
 	"example.com/mud/models"
 	"example.com/mud/world/entities"
-	"example.com/mud/world/entities/actions"
 	"example.com/mud/world/entities/components"
-	"example.com/mud/world/entities/conditions"
 )
 
 type collectedDefs struct {
-	entitiesById map[string]*ast.EntityDef
-	traitsById   map[string]*ast.TraitDef
-	commandsById map[string]*ast.CommandDef
+	entitiesById map[string]EntityDef
+	traitsById   map[string]TraitDef
+	commandsById map[string]CommandDef
 }
 
 type ChildrenPlan map[string]map[entities.ComponentType][]string
@@ -33,17 +29,17 @@ type LoweredEntity struct {
 type entityPrototype struct {
 	id  string
 	ent *entities.Entity
-	def *ast.EntityDef
+	def EntityDef
 }
 
 type entityPrototypes struct {
 	prototypesById map[string]*entityPrototype
-	traitsById     map[string]*ast.TraitDef
+	traitsById     map[string]TraitDef
 	childrenPlan   ChildrenPlan
 	visiting       map[string]struct{}
 }
 
-func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
+func Compile(ast *DSL) (map[string]*entities.Entity, []*models.CommandDefinition, error) {
 	if ast == nil {
 		return nil, nil, fmt.Errorf("nil DSL")
 	}
@@ -65,7 +61,7 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 
 	commands := make([]*models.CommandDefinition, 0, len(collectedDefs.commandsById))
 	for _, c := range collectedDefs.commandsById {
-		cd, err := buildCommandDefinition(c)
+		cd, err := c.Build()
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not instantiate command '%s': %w", c.Name, err)
 		}
@@ -77,10 +73,10 @@ func Compile(ast *ast.DSL) (map[string]*entities.Entity, []*models.CommandDefini
 }
 
 // collect entity, command and trait definitions
-func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
-	entitiesById := make(map[string]*ast.EntityDef, len(decls))
-	commandsById := make(map[string]*ast.CommandDef, len(decls))
-	traitsById := make(map[string]*ast.TraitDef, len(decls))
+func collectDefs(decls []*TopLevel) (*collectedDefs, error) {
+	entitiesById := make(map[string]EntityDef, len(decls))
+	commandsById := make(map[string]CommandDef, len(decls))
+	traitsById := make(map[string]TraitDef, len(decls))
 
 	for _, declaration := range decls {
 		if declaration == nil {
@@ -92,19 +88,19 @@ func collectDefs(decls []*ast.TopLevel) (*collectedDefs, error) {
 				return nil, fmt.Errorf("duplicate entity %s", ed.Name)
 			}
 
-			entitiesById[ed.Name] = ed
+			entitiesById[ed.Name] = *ed
 		} else if td := declaration.Trait; td != nil {
 			if _, exists := entitiesById[td.Name]; exists {
 				return nil, fmt.Errorf("duplicate trait %s", td.Name)
 			}
 
-			traitsById[declaration.Trait.Name] = declaration.Trait
+			traitsById[declaration.Trait.Name] = *declaration.Trait
 		} else if ec := declaration.Command; ec != nil {
 			if _, exists := commandsById[ec.Name]; exists {
 				return nil, fmt.Errorf("duplicate command %s", ec.Name)
 			}
 
-			commandsById[declaration.Command.Name] = declaration.Command
+			commandsById[declaration.Command.Name] = *declaration.Command
 		} else {
 			return nil, fmt.Errorf("declaration at top level is empty")
 		}
@@ -144,7 +140,7 @@ func (c *collectedDefs) collectPrototypes() (*entityPrototypes, error) {
 }
 
 // create prototype entity with components. collect child prototype names into the sidecar for later.
-func (ep *entityPrototypes) buildPrototype(id string, blocks []*ast.EntityBlock) (*entities.Entity, error) {
+func (ep *entityPrototypes) buildPrototype(id string, blocks []*EntityBlock) (*entities.Entity, error) {
 
 	loweredEntity, err := ep.lowerEntity(id, blocks)
 	if err != nil {
@@ -214,7 +210,7 @@ func (ep *entityPrototypes) buildPrototype(id string, blocks []*ast.EntityBlock)
 }
 
 // recursively expand traits in entities
-func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*LoweredEntity, error) {
+func (ep *entityPrototypes) lowerEntity(id string, blocks []*EntityBlock) (*LoweredEntity, error) {
 	if _, ok := ep.visiting[id]; ok {
 		return nil, fmt.Errorf("cycle detected at %q", id)
 	}
@@ -233,7 +229,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	for _, block := range blocks {
 		if block.Reaction != nil {
 			// process reaction
-			rules, err := buildReaction(block.Reaction)
+			rules, err := block.Reaction.Build()
 			if err != nil {
 				return nil, err
 			}
@@ -243,7 +239,7 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 			}
 		} else if block.Component != nil {
 			// process component into prototype without children
-			comp, err := processComponentPrototype(block.Component)
+			comp, err := block.Component.Build()
 			if err != nil {
 				return nil, fmt.Errorf("could not process component %s: %w", block.Component.Name, err)
 			}
@@ -343,95 +339,6 @@ func (ep *entityPrototypes) lowerEntity(id string, blocks []*ast.EntityBlock) (*
 	}, nil
 }
 
-func buildCommandDefinition(cd *ast.CommandDef) (*models.CommandDefinition, error) {
-	cmd := &models.CommandDefinition{
-		Name:     strings.ToLower(cd.Name),
-		Aliases:  []string{},
-		Patterns: []models.CommandPattern{},
-	}
-
-	for _, b := range cd.Blocks {
-		if b.Field != nil {
-			f := b.Field
-			switch f.Key {
-			case "aliases":
-				value, err := immediateEvalExpressionAs(f.Value, models.KindStringList)
-				if err != nil {
-					return nil, fmt.Errorf("could not get value '%s' for command aliases: %w", f.Key, err)
-				}
-				cmd.Aliases = append(cmd.Aliases, value.SL...)
-			default:
-				return nil, fmt.Errorf("unknown field '%s' in command definition", f.Key)
-			}
-		} else if b.CommandDefinitionDef != nil {
-			commandPattern, err := buildCommandPattern(b.CommandDefinitionDef)
-			if err != nil {
-				return nil, fmt.Errorf("could not build command pattern: %w", err)
-			}
-
-			cmd.Patterns = append(cmd.Patterns, *commandPattern)
-		} else {
-			return nil, fmt.Errorf("could not expand command definition block")
-		}
-	}
-
-	return cmd, nil
-}
-
-func buildCommandPattern(def *ast.CommandDefinitionDef) (*models.CommandPattern, error) {
-	var p = &models.CommandPattern{
-		Tokens: []models.PatToken{},
-	}
-
-	for _, f := range def.Fields {
-		value, err := immediateEvalExpressionAs(f.Value, models.KindString)
-		if err != nil {
-			return nil, fmt.Errorf("could not get value '%s' for command: %w", f.Key, err)
-		}
-
-		switch f.Key {
-		case "syntax":
-			p.Tokens = tokenizeCommandSyntax(value.S)
-		case "noMatch":
-			p.NoMatchMessage = value.S
-		case "help":
-			p.HelpMessage = value.S
-		default:
-			err := fmt.Errorf("CommandDefinitionDef Field not recognized: %s", f.Key)
-			return nil, err
-		}
-	}
-	return p, nil
-}
-
-func tokenizeCommandSyntax(s string) []models.PatToken {
-	var tokens []models.PatToken
-	parts := strings.Fields(s)
-
-	for _, part := range parts[:len(parts)-1] {
-		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
-			slot := strings.Trim(part, "{}")
-			tokens = append(tokens, models.Slot(slot))
-		} else {
-			tokens = append(tokens, models.Lit(part))
-		}
-	}
-
-	lastPart := parts[len(parts)-1]
-	if strings.HasPrefix(lastPart, "{") && strings.HasSuffix(lastPart, "}") {
-		slot := strings.Trim(lastPart, "{}")
-		if strings.Contains(slot, "...") {
-			tokens = append(tokens, models.SlotRest(strings.TrimSuffix(slot, "...")))
-		} else {
-			tokens = append(tokens, models.Slot(slot))
-		}
-	} else {
-		tokens = append(tokens, models.Lit(lastPart))
-	}
-
-	return tokens
-}
-
 // loop through prototypes and instantiate them into a map of entities by name
 func (ep *entityPrototypes) instantiatePrototypes() (map[string]*entities.Entity, error) {
 	out := make(map[string]*entities.Entity, len(ep.prototypesById))
@@ -500,273 +407,4 @@ func (ep *entityPrototypes) instantiate(id string, parent entities.ComponentWith
 	}
 
 	return inst, nil
-}
-
-func buildReaction(def *ast.ReactionDef) ([]*entities.Rule, error) {
-	rules := make([]*entities.Rule, 0, len(def.Rules))
-	for _, r := range def.Rules {
-		rule, err := buildRule(r)
-		if err != nil {
-			return nil, fmt.Errorf("could not build reaction for %s: %w", def.Commands[0], err)
-		}
-
-		rules = append(rules, rule)
-	}
-	return rules, nil
-}
-
-func buildRule(def *ast.RuleDef) (*entities.Rule, error) {
-	when, err := buildWhen(def.When)
-	if err != nil {
-		return nil, fmt.Errorf("could not build rule: %w", err)
-	}
-
-	then, err := buildThen(def.Then)
-	if err != nil {
-		return nil, fmt.Errorf("could not build rule: %w", err)
-	}
-
-	return &entities.Rule{
-		When: when,
-		Then: then,
-	}, nil
-}
-
-func buildWhen(def *ast.WhenBlock) ([]entities.Condition, error) {
-	if def == nil {
-		return []entities.Condition{}, nil
-	}
-
-	ret := make([]entities.Condition, len(def.Conds))
-
-	for i, cDef := range def.Conds {
-		condition, err := BuildCondition(cDef)
-		if err != nil {
-			return nil, fmt.Errorf("build when: %w", err)
-		}
-		ret[i] = condition
-	}
-
-	return ret, nil
-}
-
-func BuildCondition(def *ast.ConditionDef) (entities.Condition, error) {
-	if def == nil || def.Or == nil {
-		return nil, fmt.Errorf("condition in when is empty")
-	}
-
-	acc, err := buildCondAtom(def.Or.First)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, rhs := range def.Or.Rest {
-		next, err := buildCondAtom(rhs.Next)
-		if err != nil {
-			return nil, err
-		}
-		acc = &conditions.Or{
-			Left:  acc,
-			Right: next,
-		}
-	}
-
-	return acc, nil
-}
-
-func buildCondAtom(atom *ast.CondAtom) (entities.Condition, error) {
-	if atom == nil {
-		return nil, fmt.Errorf("empty condition atom")
-	}
-
-	if atom.Paren != nil {
-		return BuildCondition(atom.Paren)
-	}
-
-	if atom.Not != nil {
-		inner, err := BuildCondition(atom.Not.Cond) // NotCondition wraps *ConditionDef
-		if err != nil {
-			return nil, fmt.Errorf("not condition: %w", err)
-		}
-		return &conditions.Not{Cond: inner}, nil
-	}
-
-	if atom.Expr != nil {
-		expression, err := atom.Expr.Expr.Build()
-		if err != nil {
-			return nil, fmt.Errorf("condition expression: %w", err)
-		}
-		return &conditions.ExpressionTrue{Expression: expression}, nil
-	}
-
-	if atom.HasTag != nil {
-		eventRole, err := entities.ParseEventRole(atom.HasTag.Target)
-		if err != nil {
-			return nil, fmt.Errorf("could not build has tag condition: %w", err)
-		}
-		return &conditions.HasTag{
-			EventRole: eventRole,
-			Tag:       atom.HasTag.Tag,
-		}, nil
-	}
-
-	if atom.IsPresent != nil {
-		eventRole, err := entities.ParseEventRole(atom.IsPresent.Role)
-		if err != nil {
-			return nil, fmt.Errorf("could not build is-present condition: %w", err)
-		}
-		return &conditions.IsPresent{EventRole: eventRole}, nil
-	}
-
-	if atom.RolesEqual != nil {
-		role1, err := entities.ParseEventRole(atom.RolesEqual.Role1)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-		role2, err := entities.ParseEventRole(atom.RolesEqual.Role2)
-		if err != nil {
-			return nil, fmt.Errorf("event roles equal condition: %w", err)
-		}
-		return &conditions.EventRolesEqual{
-			EventRole1: role1,
-			EventRole2: role2,
-		}, nil
-	}
-
-	if atom.HasChild != nil {
-		parentRole, err := entities.ParseEventRole(atom.HasChild.ParentRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		component, err := entities.ParseComponentType(atom.HasChild.Component)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		childRole, err := entities.ParseEventRole(atom.HasChild.ChildRole)
-		if err != nil {
-			return nil, fmt.Errorf("has child condition: %w", err)
-		}
-		return &conditions.HasChild{
-			ParentRole:    parentRole,
-			ComponentType: component,
-			ChildRole:     childRole,
-		}, nil
-	}
-
-	if atom.MsgHas != nil {
-		return &conditions.MessageContains{
-			MessageRegex: strings.ToLower(atom.MsgHas.Message),
-		}, nil
-	}
-
-	return nil, fmt.Errorf("unrecognized condition atom")
-}
-
-func buildThen(def *ast.ThenBlock) ([]entities.Action, error) {
-	ret := make([]entities.Action, len(def.Actions))
-
-	for i, aDef := range def.Actions {
-		var newAction entities.Action
-
-		if aDef.Print != nil {
-			eventRole, err := entities.ParseEventRole(aDef.Print.Target)
-			if err != nil {
-				return nil, fmt.Errorf("could not build print action: %w", err)
-			}
-
-			newAction = &actions.Print{
-				Text:      aDef.Print.Value,
-				EventRole: eventRole,
-			}
-		} else if aDef.Publish != nil {
-			newAction = &actions.Publish{
-				Text: aDef.Publish.Value,
-			}
-		} else if aDef.Copy != nil {
-			eventRole, err := entities.ParseEventRole(aDef.Copy.Target)
-			if eventRole == entities.EventRoleUnknown {
-				return nil, fmt.Errorf("could not build copy action: %w", err)
-			}
-
-			component, err := entities.ParseComponentType(aDef.Copy.Component)
-			if err != nil {
-				return nil, fmt.Errorf("could not build action: %w", err)
-			}
-
-			newAction = &actions.Copy{
-				EntityId:      aDef.Copy.EntityId,
-				EventRole:     eventRole,
-				ComponentType: component,
-			}
-		} else if aDef.Move != nil {
-			roleObject, err := entities.ParseEventRole(aDef.Move.RoleObject)
-			if err != nil {
-				return nil, fmt.Errorf("could not build move action for origin: %w", err)
-			}
-
-			roleDestination, err := entities.ParseEventRole(aDef.Move.RoleDestination)
-			if err != nil {
-				return nil, fmt.Errorf("could not build move action for destination: %w", err)
-			}
-
-			component, err := entities.ParseComponentType(aDef.Move.Component)
-			if err != nil {
-				return nil, fmt.Errorf("could not build action: %w", err)
-			}
-
-			newAction = &actions.Move{
-				RoleObject:      roleObject,
-				RoleDestination: roleDestination,
-				ComponentType:   component,
-			}
-		} else if aDef.SetField != nil {
-			role, err := entities.ParseEventRole(aDef.SetField.Role)
-			if err != nil {
-				return nil, fmt.Errorf("event set field action: %w", err)
-			}
-
-			expression, err := aDef.SetField.Expr.Build()
-			if err != nil {
-				return nil, fmt.Errorf("expression set field action: %w", err)
-			}
-
-			newAction = &actions.SetField{
-				Role:       role,
-				Field:      aDef.SetField.Field,
-				Expression: expression,
-			}
-		} else if aDef.DestroyAction != nil {
-			role, err := entities.ParseEventRole(aDef.DestroyAction.Role)
-			if err != nil {
-				return nil, fmt.Errorf("event destroy action: %w", err)
-			}
-
-			newAction = &actions.Destroy{
-				Role: role,
-			}
-		} else if aDef.RevealChildrenAction != nil {
-			role, err := entities.ParseEventRole(aDef.RevealChildrenAction.Role)
-			if err != nil {
-				return nil, fmt.Errorf("could not build reveal children action for role: %w", err)
-			}
-
-			component, err := entities.ParseComponentType(aDef.RevealChildrenAction.Component)
-			if err != nil {
-				return nil, fmt.Errorf("could not build reveal children action: %w", err)
-			}
-
-			newAction = &actions.RevealChildren{
-				Role:          role,
-				ComponentType: component,
-				Reveal:        aDef.RevealChildrenAction.Set == "reveal",
-			}
-
-		} else {
-			return nil, fmt.Errorf("action in then is empty")
-		}
-
-		ret[i] = newAction
-	}
-
-	return ret, nil
 }

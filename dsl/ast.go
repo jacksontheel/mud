@@ -47,32 +47,9 @@ type EntityBlock struct {
 	Field     *FieldDef            `parser:"| @@"`
 }
 
-type ComponentDef struct {
-	Name   string      `parser:"@Ident"`
-	Fields []*FieldDef `parser:"'{' { @@ } '}'"`
-}
-
 type TraitInheritanceDef struct {
 	Name   string      `parser:"@Ident"`
 	Fields []*FieldDef `parser:"( '{' { @@ } '}' )?"`
-}
-
-type ReactionDef struct {
-	Commands []string   `parser:"@Ident { ',' @Ident }"`
-	Rules    []*RuleDef `parser:"'{' { @@ } '}'"`
-}
-
-type RuleDef struct {
-	When *WhenBlock `parser:"[ 'when' @@ ]"`
-	Then *ThenBlock `parser:"'then' @@"`
-}
-
-type WhenBlock struct {
-	Conds []*ConditionDef `parser:"'{' { @@ } '}'"`
-}
-
-type ThenBlock struct {
-	Actions []*ActionDef `parser:"'{' { @@ } '}'"`
 }
 
 type FieldDef struct {
@@ -84,18 +61,4 @@ type FieldDef struct {
 type KV struct {
 	Key   string `parser:"@String"`
 	Value string `parser:"':' @String"`
-}
-
-type CommandDef struct {
-	Name   string          `parser:"@Ident"`
-	Blocks []*CommandBlock `parser:"'{' { @@ } '}'"`
-}
-
-type CommandBlock struct {
-	Field                *FieldDef             `parser:"  @@"`
-	CommandDefinitionDef *CommandDefinitionDef `parser:"| @@"`
-}
-
-type CommandDefinitionDef struct {
-	Fields []*FieldDef `parser:"'pattern' '{' { @@ } '}'"`
 }
