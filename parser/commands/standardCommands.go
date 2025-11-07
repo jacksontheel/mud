@@ -94,3 +94,17 @@ var mapCommand = models.CommandDefinition{
 		},
 	},
 }
+
+var trackCommand = models.CommandDefinition{
+	Name:    "track",
+	Aliases: []string{"track"},
+	Patterns: []models.CommandPattern{
+		{
+			Tokens: []models.PatToken{
+				models.Lit("track"),
+				models.Slot("target"),
+			},
+			HelpMessage: `Track any entities with a given alias, they appear as "!" on your map.`,
+		},
+	},
+}
