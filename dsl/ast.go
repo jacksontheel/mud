@@ -6,7 +6,7 @@ import (
 
 var DslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `//[^\n]*|(?s)/\*.*?\*/`},
-	{Name: "String", Pattern: `"([^"\\]|\\.)*"`},
+	{Name: "String", Pattern: "\"([^\\\"\\\\]|\\\\.)*\"|'([^'\\\\]|\\\\.)*'|`[^`]*`"}, // ", ', or ` strings
 	{Name: "Bool", Pattern: `\b(?:true|false)\b`},
 	{Name: "Int", Pattern: `[0-9]+`},
 
