@@ -11,3 +11,5 @@ packages:
   example.com/mud/world/entities:
     interfaces:
       Publisher: {}
+      Condition: {}
+      Action: {}

@@ -96,7 +96,7 @@ func (e *Equality) Build() (expressions.Expression, error) {
 	curr := e.Next
 	op := e.Op
 	for curr != nil {
-		right, err := e.Comparison.Build()
+		right, err := e.Next.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func (c *Comparison) Build() (expressions.Expression, error) {
 	curr := c.Next
 	op := c.Op
 	for curr != nil {
-		right, err := c.Addition.Build()
+		right, err := c.Next.Build()
 		if err != nil {
 			return nil, err
 		}
