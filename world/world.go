@@ -88,6 +88,8 @@ func (w *World) Parse(p *player.Player, line string) (string, error) {
 		return p.Inventory()
 	case "map":
 		return p.Map()
+	case "track":
+		return p.Track(cmd.Params["target"])
 	}
 
 	// see if it has target

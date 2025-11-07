@@ -22,9 +22,10 @@ type Player struct {
 	CurrentRoom *entities.Entity
 	Pending     *entities.PendingAction
 
-	mu           sync.Mutex
-	nextActionAt time.Time
-	world        World
+	mu            sync.Mutex
+	nextActionAt  time.Time
+	trackingAlias string
+	world         World
 }
 
 type World interface {
