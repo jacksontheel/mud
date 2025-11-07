@@ -15,6 +15,7 @@ type ActionDef struct {
 	SetField             *SetFieldAction       `parser:"| 'set' @@"`
 	DestroyAction        *DestroyAction        `parser:"| 'destroy' @@"`
 	RevealChildrenAction *RevealChildrenAction `parser:"| @@"`
+	ConditionalAction    *ConditionalAction    `parser:"| @@"`
 }
 
 type PrintAction struct {
@@ -50,6 +51,21 @@ type RevealChildrenAction struct {
 	Component string `parser:"'.' @Ident"`
 }
 
+type ConditionalAction struct {
+	If      *IfDef   `parser:"'if' @@"`
+	ElseIfs []*IfDef `parser:"{ 'else' 'if' @@ }"`
+	Else    *ElseDef `parser:"[ @@ ]"`
+}
+
+type IfDef struct {
+	When *WhenBlock `parser:"@@"`
+	Then *ThenBlock `parser:"'then' @@"`
+}
+
+type ElseDef struct {
+	Then *ThenBlock `parser:"'else' @@"`
+}
+
 type DestroyAction struct {
 	Role string `parser:"@Ident"`
 }
@@ -70,6 +86,8 @@ func (def *ActionDef) Build() (entities.Action, error) {
 		return def.DestroyAction.Build()
 	case def.RevealChildrenAction != nil:
 		return def.RevealChildrenAction.Build()
+	case def.ConditionalAction != nil:
+		return def.ConditionalAction.Build()
 	}
 
 	return nil, fmt.Errorf("action is empty")
@@ -178,5 +196,56 @@ func (def *RevealChildrenAction) Build() (entities.Action, error) {
 		Role:          role,
 		ComponentType: component,
 		Reveal:        def.Set == "reveal",
+	}, nil
+}
+
+func (def *ConditionalAction) Build() (entities.Action, error) {
+	ruleChain := make([]*entities.Rule, 0, len(def.ElseIfs)+1)
+
+	// add first if
+	ruleDef := RuleDef{
+		When: def.If.When,
+		Then: def.If.Then,
+	}
+
+	rule, err := ruleDef.Build()
+	if err != nil {
+		return nil, fmt.Errorf("could not build 'if' action: %w", err)
+	}
+
+	ruleChain = append(ruleChain, rule)
+
+	// add the rest of the "else if"s to the chain
+	for _, elseIf := range def.ElseIfs {
+		ruleDef := RuleDef{
+			When: elseIf.When,
+			Then: elseIf.Then,
+		}
+
+		rule, err := ruleDef.Build()
+		if err != nil {
+			return nil, fmt.Errorf("could not build 'else if' action: %w", err)
+		}
+
+		ruleChain = append(ruleChain, rule)
+	}
+
+	// add the "else" actions
+	if def.Else != nil {
+		elseDef := RuleDef{
+			Then: def.Else.Then,
+		}
+
+		elseRule, err := elseDef.Build()
+		if err != nil {
+			return nil, fmt.Errorf("could not build else actions: %w", err)
+		}
+
+		ruleChain = append(ruleChain, elseRule)
+
+	}
+
+	return &actions.Conditional{
+		RuleChain: ruleChain,
 	}, nil
 }
