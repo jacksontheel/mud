@@ -20,7 +20,7 @@ func (p *Player) Map() (string, error) {
 		return "", fmt.Errorf("cannot map non-room area: %w", err)
 	}
 
-	ascii, err := renderMap(coordByRoom, currentRoom, p.world)
+	ascii, err := p.renderMap(coordByRoom, currentRoom, p.world)
 	if err != nil {
 		return "", fmt.Errorf("map: render map: %w", err)
 	}
@@ -115,7 +115,7 @@ func assignCoordinates(start *entities.Entity, world World, maxDepth int) (map[*
 	return coordByRoom, nil
 }
 
-func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.Room, world World) (string, error) {
+func (p *Player) renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.Room, world World) (string, error) {
 	if len(coordByRoom) == 0 {
 		return "", nil
 	}
@@ -152,6 +152,8 @@ func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.R
 
 		if r == currentRoom {
 			grid[gy][gx] = fmt.Sprintf("%s%s%s", models.SGR["red"], "@", models.SGR["reset"])
+		} else if len(r.GetChildren().GetChildrenByAlias(p.trackingAlias)) > 0 {
+			grid[gy][gx] = fmt.Sprintf("%s%s%s", models.SGR["yellow"], "!", models.SGR["reset"])
 		} else {
 			color := models.SGR[r.MapColor]
 			icon := r.MapIcon
@@ -194,4 +196,10 @@ func renderMap(coordByRoom map[*components.Room]coord, currentRoom *components.R
 		b.WriteByte('\n')
 	}
 	return b.String(), nil
+}
+
+func (p *Player) Track(alias string) (string, error) {
+	p.trackingAlias = alias
+
+	return fmt.Sprintf(`Rooms with "%s" will now appear as "!" on your map.`, alias), nil
 }
