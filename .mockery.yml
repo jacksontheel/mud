@@ -11,5 +11,6 @@ packages:
   example.com/mud/world/entities:
     interfaces:
       Publisher: {}
+      Scheduler: {}
       Condition: {}
       Action: {}

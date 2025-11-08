@@ -12,6 +12,7 @@ import (
 	"example.com/mud/utils"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
+	"example.com/mud/world/scheduler"
 )
 
 var safeNameRegex = regexp.MustCompile(`[^a-zA-Z]+`)
@@ -35,6 +36,8 @@ type World interface {
 
 	Publish(room *entities.Entity, text string, exclude []*entities.Entity)
 	PublishTo(room *entities.Entity, recipient *entities.Entity, text string)
+
+	GetScheduler() *scheduler.Scheduler
 }
 
 func NewPlayer(name string, world World, currentRoom *entities.Entity) (*Player, error) {
@@ -196,6 +199,7 @@ func (p *Player) ActMessage(action, message, noMatchMessage string) (string, err
 	return p.sendEventToEntity(p.Entity, &entities.Event{
 		Type:         action,
 		Publisher:    p.world,
+		Scheduler:    p.world.GetScheduler(),
 		EntitiesById: p.world.EntitiesById(),
 		Room:         p.CurrentRoom,
 		Source:       p.Entity,
@@ -236,6 +240,7 @@ func (p *Player) actUponEntity(action string, target *entities.Entity, noMatchMe
 	return p.sendEventToEntity(target, &entities.Event{
 		Type:         action,
 		Publisher:    p.world,
+		Scheduler:    p.world.GetScheduler(),
 		EntitiesById: p.world.EntitiesById(),
 		Room:         p.CurrentRoom,
 		Source:       p.Entity,
@@ -276,6 +281,7 @@ func (p *Player) actUponMessageEntity(action string, target *entities.Entity, me
 	return p.sendEventToEntity(target, &entities.Event{
 		Type:         action,
 		Publisher:    p.world,
+		Scheduler:    p.world.GetScheduler(),
 		EntitiesById: p.world.EntitiesById(),
 		Room:         p.CurrentRoom,
 		Source:       p.Entity,
@@ -347,6 +353,7 @@ func (p *Player) actUponWithEntities(action string, target, instrument *entities
 	return p.sendEventToEntity(target, &entities.Event{
 		Type:         action,
 		Publisher:    p.world,
+		Scheduler:    p.world.GetScheduler(),
 		EntitiesById: p.world.EntitiesById(),
 		Room:         p.CurrentRoom,
 		Source:       p.Entity,
