@@ -10,9 +10,12 @@ import (
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/components"
 	"example.com/mud/world/player"
+	"example.com/mud/world/scheduler"
 )
 
 type World struct {
+	Scheduler *scheduler.Scheduler
+
 	entityMap    map[string]*entities.Entity
 	startingRoom string
 	bus          *Bus
@@ -22,6 +25,7 @@ func NewWorld(entityMap map[string]*entities.Entity, startingRoom string) *World
 	return &World{
 		entityMap:    entityMap,
 		startingRoom: startingRoom,
+		Scheduler:    scheduler.NewScheduler(),
 		bus:          NewBus(),
 	}
 }
@@ -69,6 +73,10 @@ func (w *World) Publish(room *entities.Entity, text string, exclude []*entities.
 
 func (w *World) PublishTo(room *entities.Entity, recipient *entities.Entity, text string) {
 	w.bus.PublishTo(room, recipient, text)
+}
+
+func (w *World) GetScheduler() *scheduler.Scheduler {
+	return w.Scheduler
 }
 
 func (w *World) Parse(p *player.Player, line string) (string, error) {

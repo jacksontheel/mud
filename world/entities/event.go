@@ -6,6 +6,7 @@ import (
 
 	"example.com/mud/models"
 	"example.com/mud/utils"
+	"example.com/mud/world/scheduler"
 )
 
 // allows us to use the bus without tightly coupling a
@@ -15,9 +16,14 @@ type Publisher interface {
 	PublishTo(room *Entity, recipient *Entity, text string)
 }
 
+type Scheduler interface {
+	Add(job *scheduler.Job)
+}
+
 type Event struct {
 	Type         string
 	Publisher    Publisher
+	Scheduler    Scheduler
 	EntitiesById map[string]*Entity
 	Room         *Entity
 	Source       *Entity

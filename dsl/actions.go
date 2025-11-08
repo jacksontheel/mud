@@ -2,7 +2,9 @@ package dsl
 
 import (
 	"fmt"
+	"time"
 
+	"example.com/mud/models"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/entities/actions"
 )
@@ -14,6 +16,7 @@ type ActionDef struct {
 	Move                 *MoveAction           `parser:"| 'move' @@"`
 	SetField             *SetFieldAction       `parser:"| 'set' @@"`
 	DestroyAction        *DestroyAction        `parser:"| 'destroy' @@"`
+	ScheduleOnceAction   *ScheduleOnceAction   `parser:"| @@"`
 	RevealChildrenAction *RevealChildrenAction `parser:"| @@"`
 	ConditionalAction    *ConditionalAction    `parser:"| @@"`
 }
@@ -49,6 +52,12 @@ type RevealChildrenAction struct {
 	Set       string `parser:"@('reveal' | 'hide')"`
 	Role      string `parser:"@Ident"`
 	Component string `parser:"'.' @Ident"`
+}
+
+type ScheduleOnceAction struct {
+	ExprIn *Expression `parser:"'in' @@"`
+	Units  string      `parser:"@( 'second' | 'seconds' | 'minute' | 'minutes' )"`
+	Then   *ThenBlock  `parser:"@@"`
 }
 
 type ConditionalAction struct {
@@ -88,6 +97,8 @@ func (def *ActionDef) Build() (entities.Action, error) {
 		return def.RevealChildrenAction.Build()
 	case def.ConditionalAction != nil:
 		return def.ConditionalAction.Build()
+	case def.ScheduleOnceAction != nil:
+		return def.ScheduleOnceAction.Build()
 	}
 
 	return nil, fmt.Errorf("action is empty")
@@ -196,6 +207,33 @@ func (def *RevealChildrenAction) Build() (entities.Action, error) {
 		Role:          role,
 		ComponentType: component,
 		Reveal:        def.Set == "reveal",
+	}, nil
+}
+
+func (def *ScheduleOnceAction) Build() (entities.Action, error) {
+	value, err := immediateEvalExpressionAs(def.ExprIn, models.KindInt)
+	if err != nil {
+		return nil, fmt.Errorf("expression value in schedule once expected int: %w", err)
+	}
+
+	var unitMultiplier time.Duration
+	switch def.Units {
+	case "second", "seconds":
+		unitMultiplier = time.Second
+	case "minute", "minutes":
+		unitMultiplier = time.Minute
+	default:
+		return nil, fmt.Errorf("invalid unit in schedule once action: %w", err)
+	}
+
+	then, err := def.Then.Build()
+	if err != nil {
+		return nil, fmt.Errorf("could not build schedule once then actions: %w", err)
+	}
+
+	return &actions.ScheduleOnce{
+		Nanoseconds: time.Duration(value.I) * unitMultiplier,
+		Actions:     then,
 	}, nil
 }
 
