@@ -10,15 +10,16 @@ import (
 )
 
 type ActionDef struct {
-	Print                *PrintAction          `parser:"  'print' @@"`
-	Publish              *PublishAction        `parser:"| 'publish' @@"`
-	Copy                 *CopyAction           `parser:"| 'copy' @@"`
-	Move                 *MoveAction           `parser:"| 'move' @@"`
-	SetField             *SetFieldAction       `parser:"| 'set' @@"`
-	DestroyAction        *DestroyAction        `parser:"| 'destroy' @@"`
-	ScheduleOnceAction   *ScheduleOnceAction   `parser:"| @@"`
-	RevealChildrenAction *RevealChildrenAction `parser:"| @@"`
-	ConditionalAction    *ConditionalAction    `parser:"| @@"`
+	Print                   *PrintAction             `parser:"  'print' @@"`
+	Publish                 *PublishAction           `parser:"| 'publish' @@"`
+	Copy                    *CopyAction              `parser:"| 'copy' @@"`
+	Move                    *MoveAction              `parser:"| 'move' @@"`
+	SetField                *SetFieldAction          `parser:"| 'set' @@"`
+	DestroyAction           *DestroyAction           `parser:"| 'destroy' @@"`
+	ScheduleOnceAction      *ScheduleOnceAction      `parser:"| @@"`
+	ScheduleRepeatingAction *ScheduleRepeatingAction `parser:"| @@"`
+	RevealChildrenAction    *RevealChildrenAction    `parser:"| @@"`
+	ConditionalAction       *ConditionalAction       `parser:"| @@"`
 }
 
 type PrintAction struct {
@@ -60,6 +61,12 @@ type ScheduleOnceAction struct {
 	Then   *ThenBlock  `parser:"@@"`
 }
 
+type ScheduleRepeatingAction struct {
+	ExprIn *Expression `parser:"'repeat' 'every' @@"`
+	Units  string      `parser:"@( 'second' | 'seconds' | 'minute' | 'minutes' )"`
+	While  *IfDef      `parser:"'while' @@"`
+}
+
 type ConditionalAction struct {
 	If      *IfDef   `parser:"'if' @@"`
 	ElseIfs []*IfDef `parser:"{ 'else' 'if' @@ }"`
@@ -99,6 +106,8 @@ func (def *ActionDef) Build() (entities.Action, error) {
 		return def.ConditionalAction.Build()
 	case def.ScheduleOnceAction != nil:
 		return def.ScheduleOnceAction.Build()
+	case def.ScheduleRepeatingAction != nil:
+		return def.ScheduleRepeatingAction.Build()
 	}
 
 	return nil, fmt.Errorf("action is empty")
@@ -234,6 +243,38 @@ func (def *ScheduleOnceAction) Build() (entities.Action, error) {
 	return &actions.ScheduleOnce{
 		Nanoseconds: time.Duration(value.I) * unitMultiplier,
 		Actions:     then,
+	}, nil
+}
+
+func (def *ScheduleRepeatingAction) Build() (entities.Action, error) {
+	value, err := immediateEvalExpressionAs(def.ExprIn, models.KindInt)
+	if err != nil {
+		return nil, fmt.Errorf("expression value in schedule repeating expected int: %w", err)
+	}
+
+	var unitMultiplier time.Duration
+	switch def.Units {
+	case "second", "seconds":
+		unitMultiplier = time.Second
+	case "minute", "minutes":
+		unitMultiplier = time.Minute
+	default:
+		return nil, fmt.Errorf("invalid unit in schedule repeating action: %w", err)
+	}
+
+	ruleDef := RuleDef{
+		When: def.While.When,
+		Then: def.While.Then,
+	}
+
+	rule, err := ruleDef.Build()
+	if err != nil {
+		return nil, fmt.Errorf("could not build rule for schedule repeating action: %w", err)
+	}
+
+	return &actions.ScheduleRepeating{
+		Nanoseconds: time.Duration(value.I) * unitMultiplier,
+		Rule:        rule,
 	}, nil
 }
 
