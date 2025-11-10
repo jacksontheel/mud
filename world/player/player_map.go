@@ -10,7 +10,7 @@ import (
 )
 
 func (p *Player) Map() (string, error) {
-	coordByRoom, err := assignCoordinates(p.CurrentRoom, p.world, 5)
+	coordByRoom, err := assignCoordinates(p.CurrentRoom, p.world, 20)
 	if err != nil {
 		return "", fmt.Errorf("map: assign coordinates: %w", err)
 	}

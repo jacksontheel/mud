@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"example.com/mud/config"
-	"example.com/mud/dsl"
 	"example.com/mud/parser/commands"
+	"example.com/mud/scripts"
 	"example.com/mud/world"
 	"example.com/mud/world/entities"
 	"example.com/mud/world/player"
@@ -183,10 +183,8 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	entityMap, cmds, err := dsl.LoadEntitiesFromDirectory("data/")
-	if err != nil {
-		log.Fatalf("failed to load DSL entities: %v", err)
-	}
+	// goja test stuff
+	entityMap, _ := scripts.LoadEntitiesFromScript("data/build/entry.js")
 
 	// validate starting room exists in entity map
 	if _, ok := entityMap[cfg.StartingRoom]; !ok {
@@ -197,9 +195,9 @@ func main() {
 		log.Fatalf("failed to register built-in commands: %v", err)
 	}
 
-	if err := commands.RegisterCommands(cmds); err != nil {
-		log.Fatalf("failed to register DSL commands: %v", err)
-	}
+	// if err := commands.RegisterCommands(cmds); err != nil {
+	// 	log.Fatalf("failed to register DSL commands: %v", err)
+	// }
 
 	gameWorld := world.NewWorld(entityMap, cfg.StartingRoom)
 
