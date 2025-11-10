@@ -1,1 +1,5 @@
+# Don't commit vendor files
 vendor/
+
+# Don't commit javascript build files
+data/build/
