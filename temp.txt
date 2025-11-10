@@ -1,5 +1,0 @@
-npx esbuild data/bootstrap/entry.ts \
-  --bundle \
-  --format=iife \
-  --platform=neutral \
-  --outdir=data/build 
