@@ -41,7 +41,7 @@ type World interface {
 }
 
 func NewPlayer(name string, world World, currentRoom *entities.Entity) (*Player, error) {
-	playerTemplate, ok := world.GetEntityById("Player")
+	playerTemplate, ok := world.GetEntityById("Man")
 	if !ok {
 		return nil, fmt.Errorf("entity with ID 'Player' does not exist in world")
 	}
@@ -197,13 +197,10 @@ func (p *Player) Inventory() (string, error) {
 
 func (p *Player) ActMessage(action, message, noMatchMessage string) (string, error) {
 	return p.sendEventToEntity(p.Entity, &entities.Event{
-		Type:         action,
-		Publisher:    p.world,
-		Scheduler:    p.world.GetScheduler(),
-		EntitiesById: p.world.EntitiesById(),
-		Room:         p.CurrentRoom,
-		Source:       p.Entity,
-		Message:      message,
+		Type:    action,
+		Room:    p.CurrentRoom,
+		Source:  p.Entity,
+		Message: message,
 	}, noMatchMessage)
 }
 
@@ -238,13 +235,10 @@ func (p *Player) ActUponAlias(action, targetAlias, noMatchMessage string) (strin
 
 func (p *Player) actUponEntity(action string, target *entities.Entity, noMatchMessage string) (string, error) {
 	return p.sendEventToEntity(target, &entities.Event{
-		Type:         action,
-		Publisher:    p.world,
-		Scheduler:    p.world.GetScheduler(),
-		EntitiesById: p.world.EntitiesById(),
-		Room:         p.CurrentRoom,
-		Source:       p.Entity,
-		Target:       target,
+		Type:   action,
+		Room:   p.CurrentRoom,
+		Source: p.Entity,
+		Target: target,
 	}, noMatchMessage)
 }
 
@@ -279,14 +273,11 @@ func (p *Player) ActUponMessageAlias(action, targetAlias, message, noMatchMessag
 
 func (p *Player) actUponMessageEntity(action string, target *entities.Entity, message, noMatchMessage string) (string, error) {
 	return p.sendEventToEntity(target, &entities.Event{
-		Type:         action,
-		Publisher:    p.world,
-		Scheduler:    p.world.GetScheduler(),
-		EntitiesById: p.world.EntitiesById(),
-		Room:         p.CurrentRoom,
-		Source:       p.Entity,
-		Target:       target,
-		Message:      message,
+		Type:    action,
+		Room:    p.CurrentRoom,
+		Source:  p.Entity,
+		Target:  target,
+		Message: message,
 	}, noMatchMessage)
 }
 
@@ -351,14 +342,11 @@ func (p *Player) ActUponWithAlias(action, targetAlias, instrumentAlias, noMatchM
 
 func (p *Player) actUponWithEntities(action string, target, instrument *entities.Entity, noMatchMessage string) (string, error) {
 	return p.sendEventToEntity(target, &entities.Event{
-		Type:         action,
-		Publisher:    p.world,
-		Scheduler:    p.world.GetScheduler(),
-		EntitiesById: p.world.EntitiesById(),
-		Room:         p.CurrentRoom,
-		Source:       p.Entity,
-		Instrument:   instrument,
-		Target:       target,
+		Type:       action,
+		Room:       p.CurrentRoom,
+		Source:     p.Entity,
+		Instrument: instrument,
+		Target:     target,
 	}, noMatchMessage)
 }
 

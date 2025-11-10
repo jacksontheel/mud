@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"example.com/mud/config"
-	"example.com/mud/dsl"
+	"example.com/mud/loader"
 	"example.com/mud/parser/commands"
 	"example.com/mud/world"
 	"example.com/mud/world/entities"
@@ -183,9 +183,17 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	entityMap, cmds, err := dsl.LoadEntitiesFromDirectory("data/")
+	// lua
+	l := loader.New()
+	defer l.Close()
+
+	entityMap, err := l.LoadFile("data/rooms.lua")
 	if err != nil {
-		log.Fatalf("failed to load DSL entities: %v", err)
+		panic(err)
+	}
+
+	for id, e := range entityMap {
+		fmt.Printf("Entity %s: %s (%s)\n", id, e.Name, e.Description)
 	}
 
 	// validate starting room exists in entity map

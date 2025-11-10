@@ -21,15 +21,12 @@ type Scheduler interface {
 }
 
 type Event struct {
-	Type         string
-	Publisher    Publisher
-	Scheduler    Scheduler
-	EntitiesById map[string]*Entity
-	Room         *Entity
-	Source       *Entity
-	Instrument   *Entity
-	Target       *Entity
-	Message      string
+	Type       string
+	Room       *Entity
+	Source     *Entity
+	Instrument *Entity
+	Target     *Entity
+	Message    string
 }
 
 func (e *Event) GetRole(role EventRole) (*Entity, error) {
