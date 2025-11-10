@@ -41,7 +41,7 @@ type World interface {
 }
 
 func NewPlayer(name string, world World, currentRoom *entities.Entity) (*Player, error) {
-	playerTemplate, ok := world.GetEntityById("Player")
+	playerTemplate, ok := world.GetEntityById("CoastMaze_r1_c4")
 	if !ok {
 		return nil, fmt.Errorf("entity with ID 'Player' does not exist in world")
 	}

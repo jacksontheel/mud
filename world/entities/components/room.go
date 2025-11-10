@@ -18,9 +18,11 @@ type Room struct {
 var _ entities.Component = &Room{}
 var _ entities.ComponentWithChildren = &Room{}
 
-func NewRoom() *Room {
+func NewRoom(mapIcon, mapColor string, exits map[string]string) *Room {
 	return &Room{
-		MapIcon:  "O",
+		MapIcon:  mapIcon,
+		MapColor: mapColor,
+		Exits:    exits,
 		children: NewChildren(),
 	}
 }
@@ -41,7 +43,7 @@ func (r *Room) Copy() entities.Component {
 func (r *Room) AddChild(child *entities.Entity) error {
 	err := r.GetChildren().AddChild(child)
 	if err != nil {
-		return fmt.Errorf("Inventory add child: %w", err)
+		return fmt.Errorf("Room add child: %w", err)
 	}
 
 	child.Parent = r
